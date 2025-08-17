@@ -1,4 +1,0 @@
-source,name,ip,mac,type,note
-SRC1,Router1,192.168.0.1,AA:BB:CC:DD:EE:01,router,Додаткові відомості
-SRC1,PrinterMain,192.168.0.10,AA:BB:CC:DD:EE:10,printer,
-SRC2,ARM1,192.168.1.20,AA:BB:CC:DD:EE:20,arm,Потрібен огляд

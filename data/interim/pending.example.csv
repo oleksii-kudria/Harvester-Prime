@@ -1,4 +1,0 @@
-source,name,ip,mac,type,firstDate,lastDate
-SRC1,UnknownDevice,192.168.0.100,AA:BB:CC:DD:EE:FF,unknown,2024-05-01 08:30,2024-05-02 09:45
-SRC2,TVSamsung,192.168.1.30,11:22:33:44:55:66,tv,1714675200,1714761600
-SRC2,NewPhone,192.168.1.40,22:33:44:55:66:77,mkp,invalid,1714848000000
