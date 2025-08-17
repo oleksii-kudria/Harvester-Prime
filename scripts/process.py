@@ -111,7 +111,11 @@ def load_config() -> dict:
 
 
 def _load_note_mapping() -> dict[str, str]:
-    """Load note replacements from ``configs/local.yml`` if present."""
+    """Load note replacements from ``configs/local.yml`` if present.
+
+    ``target`` values may be empty strings which indicate that the matching
+    note should be replaced with an empty value.
+    """
 
     config_path = BASE_DIR / "configs" / "local.yml"
     try:
@@ -123,9 +127,12 @@ def _load_note_mapping() -> dict[str, str]:
     mapping: dict[str, str] = {}
     for app in (config.get("apps") or {}).values():
         source = (app.get("source") or "").strip()
+        # ``target`` may be an empty string which should map to an empty
+        # note value.  ``app.get('target')`` can also return ``None`` if the
+        # key is missing – in that case treat it as an empty string as well.
         target = app.get("target")
-        if source and target:
-            mapping[source.lower()] = target
+        if source:
+            mapping[source.lower()] = "" if target is None else str(target)
     return mapping
 
 
@@ -133,7 +140,11 @@ NOTE_MAPPING = _load_note_mapping()
 
 
 def normalize_note(note: str) -> str:
-    """Return note value replaced according to NOTE_MAPPING."""
+    """Return note value replaced according to ``NOTE_MAPPING``.
+
+    Comparison is case-insensitive. If a mapping exists with an empty
+    ``target`` value, the note will be replaced with an empty string.
+    """
 
     key = (note or "").strip().lower()
     return NOTE_MAPPING.get(key, note)
