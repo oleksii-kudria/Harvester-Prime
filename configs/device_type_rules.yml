@@ -8,6 +8,10 @@ rules:
       - "LAPTOP_"
       - "WIN-"
       - "WIN_"
+      - "WINDOWS-"
+      - "WINDOWS_"
+      - "Mac"
+      - "HPEliteBook"
 
   - type: arm
     mode: contains
@@ -17,15 +21,24 @@ rules:
   - type: mkp
     mode: prefix
     patterns:
+      - "A36-"
       - "A51-"
+      - "A52-"
+      - "A53-"
+      - "A54-"
+      - "Apple iPad"
       - "Galaxy-"
       - "iPhone"
+      - "Lenovo Tab"
       - "M52-"
+      - "Motorola Moto"
       - "OnePlus-"
       - "OPPO-"
       - "Pixel-"
       - "Realme-"
       - "Redmi-"
+      - "S10-"
+      - "S20-"
       - "S21-"
       - "S22-"
       - "S23-"
@@ -46,6 +59,16 @@ rules:
       - "Archer_C6"
       - "ArcherA64"
       - "Archer_C20"
+
+  - type: watch
+    mode: contains
+    patterns:
+      - "Smartwatch"
+
+  - type: printer
+    mode: prefix
+    patterns:
+      - "Canonfb5ba1"
 
 default: unknown
 options:
