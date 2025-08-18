@@ -131,14 +131,38 @@ def build_pending_rows(
     return report_rows
 
 
-def write_report(rows: list[dict[str, str]], path: Path) -> None:
-    """Write rows to CSV at *path* with required columns."""
+def write_report(rows: list[dict[str, str]], path: Path) -> int:
+    """Write rows to CSV at *path* with required columns.
+
+    Returns the number of newly written rows. Rows that already exist in the
+    target file are skipped.
+    """
+
     fieldnames = ["source", "verified", "type", "name", "ipmac", "note"]
     path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "w", newline="", encoding="utf-8") as fh:
+
+    existing: set[tuple[str, ...]] = set()
+    file_exists = path.exists()
+    if file_exists:
+        with open(path, newline="", encoding="utf-8") as fh:
+            reader = csv.DictReader(fh)
+            for row in reader:
+                existing.add(tuple(row.get(field, "") for field in fieldnames))
+
+    mode = "a" if file_exists else "w"
+    added = 0
+    with open(path, mode, newline="", encoding="utf-8") as fh:
         writer = csv.DictWriter(fh, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(rows)
+        if not file_exists:
+            writer.writeheader()
+        for row in rows:
+            key = tuple(row.get(field, "") for field in fieldnames)
+            if key in existing:
+                continue
+            writer.writerow(row)
+            existing.add(key)
+            added += 1
+    return added
 
 
 def main() -> None:
@@ -146,15 +170,24 @@ def main() -> None:
     verified_path = BASE_DIR / "data" / "interim" / "verified.csv"
     pending_path = BASE_DIR / "data" / "interim" / "pending.csv"
 
-    verified_rows = read_rows(verified_path)
-    pending_rows = read_rows(pending_path)
+    if verified_path.exists():
+        verified_rows = read_rows(verified_path)
+    else:
+        print(f"Файл {verified_path} не знайдено")
+        verified_rows = []
+
+    if pending_path.exists():
+        pending_rows = read_rows(pending_path)
+    else:
+        print(f"Файл {pending_path} не знайдено")
+        pending_rows = []
 
     report_rows = build_verified_rows(devices, verified_rows)
     report_rows.extend(build_pending_rows(devices, pending_rows))
     report_path = BASE_DIR / "data" / "interim" / "report1.csv"
-    write_report(report_rows, report_path)
+    added = write_report(report_rows, report_path)
     print(f"Створено файл {report_path}")
-    print(f"Додано {len(report_rows)} записів")
+    print(f"Додано {added} записів")
 
 
 if __name__ == "__main__":
