@@ -64,7 +64,7 @@ def write_dhcp_interim(path: Path, rows: Iterable[Dict[str, str]]) -> None:
     """
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    fieldnames = ["source", "ip", "mac", "hostname", "firstDate", "lastDate"]
+    fieldnames = ["source", "ip", "mac", "name", "firstDate", "lastDate"]
 
     # Load existing records to avoid writing duplicates
     existing: Set[Tuple[str, ...]] = set()
@@ -73,7 +73,14 @@ def write_dhcp_interim(path: Path, rows: Iterable[Dict[str, str]]) -> None:
         with open(path, newline="", encoding="utf-8") as fh:
             reader = csv.DictReader(fh)
             for row in reader:
-                existing.add(tuple(row.get(f, "") for f in fieldnames))
+                existing.add(
+                    tuple(
+                        row.get("name", row.get("hostname", ""))
+                        if f == "name"
+                        else row.get(f, "")
+                        for f in fieldnames
+                    )
+                )
         mode = "a"
     else:
         mode = "w"
@@ -85,11 +92,20 @@ def write_dhcp_interim(path: Path, rows: Iterable[Dict[str, str]]) -> None:
         if mode == "w":
             writer.writeheader()
         for row in rows:
-            record = tuple(row.get(f, "") for f in fieldnames)
+            # Accept both ``name`` and legacy ``hostname`` keys
+            normalized = {
+                "source": row.get("source", ""),
+                "ip": row.get("ip", ""),
+                "mac": row.get("mac", ""),
+                "name": row.get("name", row.get("hostname", "")),
+                "firstDate": row.get("firstDate", ""),
+                "lastDate": row.get("lastDate", ""),
+            }
+            record = tuple(normalized.get(f, "") for f in fieldnames)
             if record in existing:
                 dup_count += 1
                 continue
-            writer.writerow(row)
+            writer.writerow(normalized)
             existing.add(record)
             new_count += 1
 
