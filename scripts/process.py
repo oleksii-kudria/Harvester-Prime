@@ -10,10 +10,17 @@ from __future__ import annotations
 from pathlib import Path
 import sys
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import re
 
-import pandas as pd
-import yaml
+try:
+    import pandas as pd
+except Exception:  # pragma: no cover
+    pd = None  # type: ignore
+try:
+    import yaml
+except Exception:  # pragma: no cover
+    yaml = None  # type: ignore
 
 # Ensure the src directory is on the Python path
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -27,7 +34,6 @@ from app.collectors.files import (
     write_csv,
 )
 from app.processors.normalize import normalize_dhcp_records
-from app.classifiers.device_type import DeviceTypeClassifier
 
 
 def load_schemas() -> dict:
@@ -39,6 +45,8 @@ def load_schemas() -> dict:
     """
 
     schema_path = BASE_DIR / "configs" / "schemas.yml"
+    if yaml is None:
+        return {}
     with open(schema_path, encoding="utf-8") as fh:
         return yaml.safe_load(fh) or {}
 
@@ -50,7 +58,7 @@ def rename_hostname_column(path: Path) -> None:
     """Rename ``hostname`` column to ``name`` in *path* if present."""
 
     path = Path(path)
-    if not path.exists():
+    if pd is None or not path.exists():
         return
     df = pd.read_csv(path, dtype=str)
     if "hostname" in df.columns and "name" not in df.columns:
@@ -106,6 +114,8 @@ def _format_timestamp(value: str) -> str:
 def load_config() -> dict:
     """Load configuration values from ``configs/base.yaml``."""
     config_path = BASE_DIR / "configs" / "base.yaml"
+    if yaml is None:
+        return {}
     with open(config_path, encoding="utf-8") as fh:
         return yaml.safe_load(fh) or {}
 
@@ -118,6 +128,8 @@ def _load_note_mapping() -> dict[str, str]:
     """
 
     config_path = BASE_DIR / "configs" / "local.yml"
+    if yaml is None:
+        return {}
     try:
         with open(config_path, encoding="utf-8") as fh:
             config = yaml.safe_load(fh) or {}
@@ -218,7 +230,98 @@ def run_validation(validation_dir: Path, dhcp_file: Path, report_file: Path) -> 
     print(f"Додано {len(report_rows)} нових записів.")
 
 
+IP_RE = re.compile(r"^(?:\d{1,3}\.){3}\d{1,3}$")
 MAC_RE = re.compile(r"^[0-9A-Fa-f]{2}([-:][0-9A-Fa-f]{2}){5}$")
+
+
+def _normalize_spaces(value: str) -> str:
+    """Return *value* with NBSP replaced and consecutive spaces collapsed."""
+
+    return " ".join((value or "").replace("\u00A0", " ").split())
+
+
+def _normalize_mac(value: str) -> str:
+    """Return MAC address in ``XX:XX:XX:XX:XX:XX`` format if possible."""
+
+    raw = (value or "").strip()
+    cleaned = re.sub(r"[^0-9A-Fa-f]", "", raw)
+    if len(cleaned) == 12:
+        parts = [cleaned[i : i + 2] for i in range(0, 12, 2)]
+        return ":".join(parts).upper()
+    return raw.upper().replace("-", ":")
+
+
+def _validate_ip(value: str) -> str:
+    """Return *value* if it is a valid IPv4 address, otherwise an empty string."""
+
+    value = _normalize_spaces(value)
+    if not value or value == "-" or not IP_RE.fullmatch(value):
+        return ""
+    try:
+        if any(int(octet) > 255 for octet in value.split(".")):
+            return ""
+    except ValueError:
+        return ""
+    return value
+
+
+def _normalize_name(name: str, mac: str) -> str:
+    """Normalise *name* applying special MAC-related rules."""
+
+    name = _normalize_spaces(name)
+    mac_norm = _normalize_mac(mac)
+    mac_plain = re.sub(r"[^0-9A-Fa-f]", "", mac_norm).upper()
+    name_plain = re.sub(r"[^0-9A-Fa-f]", "", name).upper()
+    if name_plain == mac_plain:
+        return "unknown"
+    tail = mac_norm[-5:].lower()
+    if name.lower().endswith(f" {tail}"):
+        return name[: -len(tail) - 1]
+    return name
+
+
+def _parse_last_date(date_str: str, ip: str) -> str:
+    """Return epoch timestamp for *date_str* if *ip* is valid."""
+
+    if not ip:
+        return ""
+    date_str = _normalize_spaces(date_str)
+    try:
+        dt = datetime.strptime(date_str, "%b %d %Y %I:%M %p").replace(
+            tzinfo=ZoneInfo("Europe/Kyiv")
+        )
+    except ValueError:
+        return ""
+    return str(int(dt.timestamp()))
+
+
+def run_ubiq_interim(ubiq_dir: Path, dhcp_file: Path) -> None:
+    """Process Ubiq CSV files and append results to *dhcp_file*."""
+
+    ubiq_dir = Path(ubiq_dir)
+    dhcp_file = Path(dhcp_file)
+    files = list_csv_files(ubiq_dir)
+    if not files:
+        print(f"Відсутні файли Ubiq у {ubiq_dir}. Крок Ubiq пропущено.")
+        return
+
+    rows = []
+    for path in files:
+        for row in read_csv(path, columns=["source", "name", "mac", "ip", "date"]):
+            mac = _normalize_mac(row.get("mac", ""))
+            ip = _validate_ip(row.get("ip", ""))
+            rows.append(
+                {
+                    "source": _normalize_spaces(row.get("source", "")),
+                    "ip": ip,
+                    "mac": mac,
+                    "name": _normalize_name(row.get("name", ""), mac),
+                    "firstDate": "",
+                    "lastDate": _parse_last_date(row.get("date", ""), ip),
+                }
+            )
+
+    write_dhcp_interim(dhcp_file, rows)
 
 
 def run_arm_interim(arm_dir: Path, dhcp_file: Path, verified_file: Path) -> None:
@@ -626,6 +729,8 @@ def run_pending_check(
         for row in read_csv_mapped(verified_file, "verified", ["mac"])
     }
 
+    from app.classifiers.device_type import DeviceTypeClassifier
+
     classifier = DeviceTypeClassifier(BASE_DIR / "configs" / "device_type_rules.yml")
     fieldnames = ["type", "source", "ip", "mac", "name", "firstDate", "lastDate"]
     append = pending_file.exists()
@@ -669,6 +774,9 @@ def main() -> None:
     records = load_dhcp_logs(raw_dir)
     normalized = normalize_dhcp_records(records)
     write_dhcp_interim(interim_file, normalized)
+
+    ubiq_dir = BASE_DIR / paths.get("raw_ubiq", "data/raw/ubiq")
+    run_ubiq_interim(ubiq_dir, interim_file)
 
     validation_dir = BASE_DIR / paths.get("raw_validation", "data/raw/validation")
     if list_csv_files(validation_dir):
