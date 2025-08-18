@@ -52,3 +52,46 @@ def test_generate_report1_includes_pending(tmp_path, monkeypatch):
         == "Не надано для перевірки.\nПерше підключення – 02.01.2024 03.04, останнє підключення – 03.02.2024 04.05."
     )
 
+
+def test_generate_report1_handles_epoch_times(tmp_path, monkeypatch):
+    base_dir = tmp_path
+
+    (base_dir / "configs").mkdir()
+    (base_dir / "data" / "interim").mkdir(parents=True)
+    (base_dir / "configs" / "base.yaml").write_text(
+        """devices:
+  router: \"Маршрутизатор\"
+  arm: \"АРМ\"
+""",
+        encoding="utf-8",
+    )
+
+    (base_dir / "data" / "interim" / "verified.csv").write_text(
+        "source,type,name,ip,mac,randmac,note\n"
+        "VSrc,router,RName,1.1.1.1,aa,,Extra\n",
+        encoding="utf-8",
+    )
+
+    first_epoch = "1704164640000"  # 2024-01-02 03:04
+    last_epoch = "1706933100000"   # 2024-02-03 04:05
+    (base_dir / "data" / "interim" / "pending.csv").write_text(
+        "source,name,ip,mac,randmac,type,firstDate,lastDate\n"
+        f"PSrc,PName,2.2.2.2,bb,,arm,{first_epoch},{last_epoch}\n",
+        encoding="utf-8",
+    )
+
+    gr = importlib.import_module("scripts.generate_report1")
+    monkeypatch.setattr(gr, "BASE_DIR", base_dir)
+    gr.main()
+
+    report_path = base_dir / "data" / "interim" / "report1.csv"
+    with open(report_path, encoding="utf-8") as fh:
+        rows = list(csv.DictReader(fh))
+
+    assert len(rows) == 2
+    pending = rows[1]
+    assert pending["note"] == (
+        "Не надано для перевірки.\n"
+        "Перше підключення – 02.01.2024 03.04, останнє підключення – 03.02.2024 04.05."
+    )
+

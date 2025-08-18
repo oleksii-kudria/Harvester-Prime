@@ -85,10 +85,20 @@ def _format_dt(value: str) -> str:
     """Return ``value`` formatted as ``dd.MM.yyyy HH.mm`` if possible."""
     if not value:
         return ""
-    try:
-        dt = datetime.fromisoformat(value)
-    except ValueError:
-        return value
+    value = value.strip()
+    if value.isdigit():
+        try:
+            ts = int(value)
+            if ts > 1_000_000_000_000:  # milliseconds
+                ts /= 1000
+            dt = datetime.fromtimestamp(ts)
+        except (ValueError, OSError):
+            return value
+    else:
+        try:
+            dt = datetime.fromisoformat(value)
+        except ValueError:
+            return value
     return dt.strftime("%d.%m.%Y %H.%M")
 
 
