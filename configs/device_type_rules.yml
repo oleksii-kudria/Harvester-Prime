@@ -2,16 +2,17 @@ rules:
   - type: arm
     mode: prefix
     patterns:
+      - "Blanket-"
       - "DESKTOP-"
       - "DESKTOP_"
+      - "HPEliteBook"
       - "LAPTOP-"
       - "LAPTOP_"
+      - "Mac"
       - "WIN-"
       - "WIN_"
       - "WINDOWS-"
       - "WINDOWS_"
-      - "Mac"
-      - "HPEliteBook"
 
   - type: arm
     mode: contains
@@ -27,7 +28,9 @@ rules:
       - "A53-"
       - "A54-"
       - "Apple iPad"
+      - "Apple iPhone"
       - "Galaxy-"
+      - "HUAWEI_P_smart-"
       - "iPhone"
       - "Lenovo Tab"
       - "M52-"
@@ -45,7 +48,13 @@ rules:
       - "S24-"
       - "SM73GA5G"
       - "Tab-"
+      - "TB330FU"
       - "Xiaomi-"
+
+  - type: mkp
+    mode: contains
+    patterns:
+      - "Redmi9T"
 
   - type: router
     mode: regex
@@ -69,6 +78,11 @@ rules:
     mode: prefix
     patterns:
       - "Canonfb5ba1"
+
+  - type: tv
+    mode: prefix
+    patterns:
+      - "Hisense Vision"
 
 default: unknown
 options:
