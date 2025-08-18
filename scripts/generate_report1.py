@@ -82,7 +82,7 @@ def build_verified_rows(
 
 
 def _format_dt(value: str) -> str:
-    """Return ``value`` formatted as ``dd.MM.yyyy HH.mm`` if possible."""
+    """Return ``value`` formatted as ``dd.MM.yyyy HH:mm`` if possible."""
     if not value:
         return ""
     value = value.strip()
@@ -99,7 +99,7 @@ def _format_dt(value: str) -> str:
             dt = datetime.fromisoformat(value)
         except ValueError:
             return value
-    return dt.strftime("%d.%m.%Y %H.%M")
+    return dt.strftime("%d.%m.%Y %H:%M")
 
 
 def build_pending_rows(
@@ -127,6 +127,9 @@ def build_pending_rows(
                     note_parts.append(
                         f"Перше підключення – {first_fmt}, останнє підключення – {last_fmt}."
                     )
+            elif not first and last:
+                last_fmt = _format_dt(last)
+                note_parts.append(f"Останнє підключення – {last_fmt}.")
             note = "\n".join(note_parts)
             report_rows.append(
                 {
