@@ -111,7 +111,11 @@ def load_config() -> dict:
 
 
 def _load_note_mapping() -> dict[str, str]:
-    """Load note replacements from ``configs/local.yml`` if present."""
+    """Load note replacements from ``configs/local.yml`` if present.
+
+    The config may specify an empty ``target`` which indicates that matching
+    ``note`` values should be replaced with an empty string.
+    """
 
     config_path = BASE_DIR / "configs" / "local.yml"
     try:
@@ -124,7 +128,7 @@ def _load_note_mapping() -> dict[str, str]:
     for app in (config.get("apps") or {}).values():
         source = (app.get("source") or "").strip()
         target = app.get("target")
-        if source and target:
+        if source and target is not None:
             mapping[source.lower()] = target
     return mapping
 
