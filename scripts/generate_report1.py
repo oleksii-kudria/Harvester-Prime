@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Generate report1.csv from verified.csv using device mappings."""
+"""Generate report1.csv from verified and pending CSV files using device mappings."""
 from __future__ import annotations
 
 import csv
+from datetime import datetime
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -33,9 +34,11 @@ def load_device_mapping() -> list[tuple[str, str]]:
     return devices
 
 
-def read_verified_rows(path: Path) -> list[dict[str, str]]:
-    """Read verified.csv ensuring all fields are strings."""
+def read_rows(path: Path) -> list[dict[str, str]]:
+    """Read CSV ensuring all fields are strings."""
     rows: list[dict[str, str]] = []
+    if not path.exists():
+        return rows
     with open(path, newline="", encoding="utf-8") as fh:
         reader = csv.DictReader(fh)
         for row in reader:
@@ -43,8 +46,10 @@ def read_verified_rows(path: Path) -> list[dict[str, str]]:
     return rows
 
 
-def build_report_rows(devices: list[tuple[str, str]], rows: list[dict[str, str]]) -> list[dict[str, str]]:
-    """Create report rows ordered by device keys."""
+def build_verified_rows(
+    devices: list[tuple[str, str]], rows: list[dict[str, str]]
+) -> list[dict[str, str]]:
+    """Create report rows for verified devices ordered by device keys."""
     report_rows: list[dict[str, str]] = []
     for key, display_name in devices:
         for row in rows:
@@ -76,6 +81,56 @@ def build_report_rows(devices: list[tuple[str, str]], rows: list[dict[str, str]]
     return report_rows
 
 
+def _format_dt(value: str) -> str:
+    """Return ``value`` formatted as ``dd.MM.yyyy HH.mm`` if possible."""
+    if not value:
+        return ""
+    try:
+        dt = datetime.fromisoformat(value)
+    except ValueError:
+        return value
+    return dt.strftime("%d.%m.%Y %H.%M")
+
+
+def build_pending_rows(
+    devices: list[tuple[str, str]], rows: list[dict[str, str]]
+) -> list[dict[str, str]]:
+    """Create report rows for pending devices ordered by device keys."""
+    report_rows: list[dict[str, str]] = []
+    for key, display_name in devices:
+        for row in rows:
+            if row.get("type") != key:
+                continue
+            name = f"{display_name}\n{row.get('name', '')}"
+            ipmac = f"{row.get('ip', '')}\n{row.get('mac', '')}"
+            note_parts = ["Не надано для перевірки."]
+            first = row.get("firstDate", "")
+            last = row.get("lastDate", "")
+            if first and last:
+                first_fmt = _format_dt(first)
+                last_fmt = _format_dt(last)
+                if first == last:
+                    note_parts.append(
+                        f"Перше та останнє підключення – {last_fmt}."
+                    )
+                else:
+                    note_parts.append(
+                        f"Перше підключення – {first_fmt}, останнє підключення – {last_fmt}."
+                    )
+            note = "\n".join(note_parts)
+            report_rows.append(
+                {
+                    "source": row.get("source", ""),
+                    "verified": "false",
+                    "type": row.get("type", ""),
+                    "name": name,
+                    "ipmac": ipmac,
+                    "note": note,
+                }
+            )
+    return report_rows
+
+
 def write_report(rows: list[dict[str, str]], path: Path) -> None:
     """Write rows to CSV at *path* with required columns."""
     fieldnames = ["source", "verified", "type", "name", "ipmac", "note"]
@@ -89,8 +144,13 @@ def write_report(rows: list[dict[str, str]], path: Path) -> None:
 def main() -> None:
     devices = load_device_mapping()
     verified_path = BASE_DIR / "data" / "interim" / "verified.csv"
-    rows = read_verified_rows(verified_path)
-    report_rows = build_report_rows(devices, rows)
+    pending_path = BASE_DIR / "data" / "interim" / "pending.csv"
+
+    verified_rows = read_rows(verified_path)
+    pending_rows = read_rows(pending_path)
+
+    report_rows = build_verified_rows(devices, verified_rows)
+    report_rows.extend(build_pending_rows(devices, pending_rows))
     report_path = BASE_DIR / "data" / "interim" / "report1.csv"
     write_report(report_rows, report_path)
     print(f"Створено файл {report_path}")
