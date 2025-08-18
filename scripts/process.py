@@ -691,7 +691,7 @@ def main() -> None:
     )
     run_arm_check(arm_dir, interim_file, report_file2)
     run_mkp_check(mkp_dir, interim_file, report_file2)
-    pending_file = BASE_DIR / "data/interim/рending.csv"
+    pending_file = BASE_DIR / "data/interim/pending.csv"
     run_pending_check(interim_file, verified_file, pending_file)
 
 
