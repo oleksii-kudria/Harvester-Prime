@@ -66,6 +66,7 @@ def build_report_rows(devices: list[tuple[str, str]], rows: list[dict[str, str]]
             report_rows.append(
                 {
                     "source": row.get("source", ""),
+                    "verified": "true",
                     "type": row.get("type", ""),
                     "name": name,
                     "ipmac": ipmac,
@@ -77,7 +78,7 @@ def build_report_rows(devices: list[tuple[str, str]], rows: list[dict[str, str]]
 
 def write_report(rows: list[dict[str, str]], path: Path) -> None:
     """Write rows to CSV at *path* with required columns."""
-    fieldnames = ["source", "type", "name", "ipmac", "note"]
+    fieldnames = ["source", "verified", "type", "name", "ipmac", "note"]
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", newline="", encoding="utf-8") as fh:
         writer = csv.DictWriter(fh, fieldnames=fieldnames)

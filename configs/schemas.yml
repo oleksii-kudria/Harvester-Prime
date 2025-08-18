@@ -24,6 +24,13 @@ report:
   ipmac: "ipmac"
 verified:
   mac: "mac"
+report1:
+  source: "source"
+  verified: "verified"
+  type: "type"
+  name: "name"
+  ipmac: "ipmac"
+  note: "note"
 pending:
   type: "type"
   source: "source"
