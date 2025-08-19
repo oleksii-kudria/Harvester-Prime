@@ -1,4 +1,4 @@
-type,name,ip,mac,owner
+type,name,ip,mac,note
 tv,Samsung SmartTV,192.168.55.46,68:FC:CA:9A:36:A3,Samsung
 tv,TV5,192.168.3.122,80:97:32:02:2E:4A,TV5
 router,MikroTik RB750r2,192.168.55.53,C4:AD:14:42:6D:73,RB750r2
