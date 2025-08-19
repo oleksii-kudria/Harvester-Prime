@@ -34,6 +34,7 @@ from app.collectors.files import (
     write_csv,
 )
 from app.processors.normalize import normalize_dhcp_records
+from app.processors.verified import append_other_to_verified
 
 
 def load_schemas() -> dict:
@@ -791,9 +792,11 @@ def main() -> None:
 
     arm_dir = BASE_DIR / paths.get("raw_arm", "data/raw/arm")
     mkp_dir = BASE_DIR / paths.get("raw_mkp", "data/raw/mkp")
+    other_dir = BASE_DIR / paths.get("raw_other", "data/raw/other")
     verified_file = BASE_DIR / "data/interim/verified.csv"
     run_arm_interim(arm_dir, interim_file, verified_file)
     run_mkp_interim(mkp_dir, interim_file, verified_file)
+    append_other_to_verified(other_dir, interim_file, verified_file)
     report_file2 = BASE_DIR / paths.get(
         "arm_mkp_report", "data/result/120report2.csv"
     )
