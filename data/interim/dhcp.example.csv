@@ -1,0 +1,2 @@
+source,ip,mac,name,firstDate,lastDate
+dhcp.log,192.168.0.10,AA:BB:CC:DD:EE:FF,Device1,2024-01-01 00:00,2024-01-02 00:00
