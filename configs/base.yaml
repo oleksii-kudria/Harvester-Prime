@@ -16,6 +16,7 @@ paths:
 
 devices:
   router: "Маршрутизатор"
+  apoint: "Точка доступу"
   arm: "АРМ"
   mkp: "МКП"
   tv: "Телевізор"
