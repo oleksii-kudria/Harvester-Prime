@@ -1,4 +1,5 @@
 configs/local.yml
+data/result/*.txt
 
 # Ігноруємо всі CSV у data/ та підпапках
 data/**/*.csv
