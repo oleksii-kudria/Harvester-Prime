@@ -11,6 +11,8 @@ paths:
   raw_arm: data/raw/arm
   # Directory with MKP inventory CSV files
   raw_mkp: data/raw/mkp
+  # Directory with additional device CSV files
+  raw_other: data/raw/other
   # Report produced from ARM and MKP checks
   arm_mkp_report: data/result/120report2.csv
 
