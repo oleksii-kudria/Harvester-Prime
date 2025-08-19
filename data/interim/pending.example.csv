@@ -1,2 +1,2 @@
 type,source,ip,mac,name,firstDate,lastDate
-arm,dhcp.log,192.168.0.20,FF:EE:DD:CC:BB:AA,Device2,2024-01-03 01:00,2024-01-04 02:00
+arm,10.0.0.10,192.168.0.20,FF:EE:DD:CC:BB:AA,Device2,1755446086614,1755446086614

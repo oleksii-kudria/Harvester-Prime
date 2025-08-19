@@ -1,0 +1,7 @@
+type,name,ip,mac,owner
+tv,Samsung SmartTV,192.168.55.46,68:FC:CA:9A:36:A3,Samsung
+tv,TV5,192.168.3.122,80:97:32:02:2E:4A,TV5
+router,MikroTik RB750r2,192.168.55.53,C4:AD:14:42:6D:73,RB750r2
+apoint,TP-Link Archer AX72,192.168.3.56,14:4F:D1:55:FB:AC,ArcherAX72
+apoint,TP-Link Archer A64,192.168.3.134,9C:E9:39:96:79:FA,ArcherA64
+printer,Canon,192.168.3.47,81:A5:89:F1:D1:C1,Canonfb5ba1
