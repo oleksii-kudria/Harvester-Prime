@@ -1,5 +1,6 @@
 arm:
-  mac: "MAC"
+#  mac: "MAC"
+  mac: "Static MAC"
   hostname: "Hostname"
   owner: "Власник"
   pc_type: "Тип ПК"
