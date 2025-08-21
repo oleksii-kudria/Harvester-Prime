@@ -21,6 +21,8 @@ devices:
   apoint: "Точка доступу"
   arm: "АРМ"
   mkp: "МКП"
+  rarm: "АРМ (randome mac)"
+  rmkp: "МКП (randome mac)"
   tv: "Телевізор"
   printer: "Принтер"
   watch: "Смарт-годинник"
