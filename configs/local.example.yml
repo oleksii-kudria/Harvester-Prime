@@ -8,3 +8,9 @@ apps:
   app3:
     source: "ПЗ \"Кукумбер\""
     target: "Antivirus \"Cucumber\""
+
+ignore:
+  mac:
+    phone: "B6:87:29:FC:51:D2"
+    laptop: "56:97:0E:87:72:41"
+    admin: "9E:31:F6:FA:B7:B3"
