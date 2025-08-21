@@ -6,7 +6,8 @@ import csv
 import re
 from typing import Dict, List
 
-from app.collectors.files import list_csv_files, write_csv
+from app.collectors.files import list_csv_files
+from app.io.csvio import write_csv
 
 
 def _normalize_mac(value: str) -> str:

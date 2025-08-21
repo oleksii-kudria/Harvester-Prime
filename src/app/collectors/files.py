@@ -3,7 +3,9 @@ from __future__ import annotations
 
 from pathlib import Path
 import csv
-from typing import Iterable, Dict, List, Set, Tuple, Optional
+from typing import Iterable, Dict, List, Set, Tuple
+
+from app.io.csvio import read_csv
 
 # Columns we are interested in within DHCP log files
 DHCP_COLUMNS = [
@@ -23,28 +25,6 @@ def list_csv_files(directory: Path) -> List[Path]:
     """List all CSV files within *directory* that should be processed."""
     directory = Path(directory)
     return [p for p in directory.glob("*.csv") if _is_valid_csv(p)]
-
-
-def read_csv(path: Path, columns: Optional[Iterable[str]] = DHCP_COLUMNS) -> List[Dict[str, str]]:
-    """Read selected *columns* from a CSV file.
-
-    Parameters
-    ----------
-    path:
-        Path to the CSV file.
-    columns:
-        Iterable with the names of the columns to return. If ``None`` all
-        columns from the file are included.
-    """
-    rows: List[Dict[str, str]] = []
-    with open(path, newline="", encoding="utf-8") as fh:
-        reader = csv.DictReader(fh)
-        if columns is None:
-            rows.extend(row for row in reader)
-        else:
-            for row in reader:
-                rows.append({col: row.get(col, "") for col in columns})
-    return rows
 
 
 def load_dhcp_logs(directory: Path) -> List[Dict[str, str]]:
@@ -117,43 +97,3 @@ def write_dhcp_interim(path: Path, rows: Iterable[Dict[str, str]]) -> None:
         f"Додано {new_count} нових записів. "
         f"{dup_count} записів вже існували та не були додані."
     )
-
-
-def write_csv(
-    path: Path,
-    fieldnames: Iterable[str],
-    rows: Iterable[Dict[str, str]],
-    append: bool = False,
-) -> bool:
-    """Write *rows* to *path* using *fieldnames*.
-
-    Parameters
-    ----------
-    path:
-        Destination CSV file.
-    fieldnames:
-        Column names to write.
-    rows:
-        Iterable of row dictionaries.
-    append:
-        If ``True`` new rows are appended to the file when it exists. When
-        ``False`` the file is replaced.
-
-    Returns
-    -------
-    bool
-        ``True`` if the file was created, ``False`` if it already existed.
-    """
-
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    exists = path.exists()
-    mode = "a" if append and exists else "w"
-
-    with open(path, mode, newline="", encoding="utf-8") as fh:
-        writer = csv.DictWriter(fh, fieldnames=fieldnames)
-        if mode == "w" or not exists:
-            writer.writeheader()
-        writer.writerows(rows)
-
-    return not exists

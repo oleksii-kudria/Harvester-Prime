@@ -2,6 +2,10 @@
 
 Utilities for processing DHCP log files.
 
+The project is organised as small command line entry points under
+``scripts/`` which delegate all heavy lifting to modules in ``src/app``.
+This makes the code reusable and easier to test.
+
 ## Functionality
 
 * Collect DHCP log entries from CSV files in a directory.
@@ -24,10 +28,18 @@ when the MAC address was seen.
 Ensure dependencies are installed and run:
 
 ```bash
+# remove interim CSV files
+python scripts/process.py clean
+
+# build interim DHCP data
 python scripts/process.py
+
+# generate report from verified and pending
+python scripts/generate_report1.py
 ```
 
-The script reads configuration, processes the raw logs and stores the normalized output.
+All scripts only parse arguments and call functions from ``app`` modules
+where the business logic resides.
 
 See `src/app/collectors/files.py` for implementation details.
 
