@@ -362,36 +362,65 @@ def run_arm_interim(arm_dir: Path, dhcp_file: Path, verified_file: Path) -> None
                 existing_macs.add(mac)
 
     rows_to_write = []
+    file_count = 0
+    rand_matches = 0
+    invalid_rand = 0
 
     if arm_dir.exists():
         for path in list_csv_files(arm_dir):
+            file_count += 1
             for row in read_csv_mapped(
-                path, "arm", ["mac", "hostname", "owner", "pc_type"]
+                path, "arm", ["mac", "hostname", "owner", "pc_type", "randmac"]
             ):
                 mac_raw = (row.get("mac", "") or "").strip()
-                if not MAC_RE.fullmatch(mac_raw):
-                    continue
-                mac = mac_raw.upper().replace("-", ":")
-                if mac in existing_macs:
-                    continue
-                dhcp_row = dhcp_records.get(mac)
-                if not dhcp_row:
-                    continue
-                rows_to_write.append(
-                    {
-                        "type": "arm",
-                        "source": dhcp_row.get("source", ""),
-                        "name": row.get("hostname", ""),
-                        "ip": dhcp_row.get("ip", ""),
-                        "mac": mac,
-                        "randmac": "",
-                        "owner": row.get("owner", ""),
-                        "note": normalize_note(row.get("pc_type", "")),
-                        "firstDate": dhcp_row.get("firstDate", ""),
-                        "lastDate": dhcp_row.get("lastDate", ""),
-                    }
-                )
-                existing_macs.add(mac)
+                if MAC_RE.fullmatch(mac_raw):
+                    mac = mac_raw.upper().replace("-", ":")
+                else:
+                    mac = ""
+                rand_raw = (row.get("randmac", "") or "").strip()
+                rand_norm = _normalize_mac(rand_raw)
+                if rand_raw and not MAC_RE.fullmatch(rand_norm):
+                    invalid_rand += 1
+                    rand_norm = ""
+
+                if mac and mac not in existing_macs:
+                    dhcp_row = dhcp_records.get(mac)
+                    if dhcp_row:
+                        rows_to_write.append(
+                            {
+                                "type": "arm",
+                                "source": dhcp_row.get("source", ""),
+                                "name": row.get("hostname", ""),
+                                "ip": dhcp_row.get("ip", ""),
+                                "mac": mac,
+                                "randmac": "",
+                                "owner": row.get("owner", ""),
+                                "note": normalize_note(row.get("pc_type", "")),
+                                "firstDate": dhcp_row.get("firstDate", ""),
+                                "lastDate": dhcp_row.get("lastDate", ""),
+                            }
+                        )
+                        existing_macs.add(mac)
+
+                if rand_norm and rand_norm not in existing_macs:
+                    dhcp_row = dhcp_records.get(rand_norm)
+                    if dhcp_row:
+                        rows_to_write.append(
+                            {
+                                "type": "rarm",
+                                "source": dhcp_row.get("source", ""),
+                                "name": row.get("hostname", ""),
+                                "ip": dhcp_row.get("ip", ""),
+                                "mac": rand_norm,
+                                "randmac": mac,
+                                "owner": row.get("owner", ""),
+                                "note": normalize_note(row.get("pc_type", "")),
+                                "firstDate": dhcp_row.get("firstDate", ""),
+                                "lastDate": dhcp_row.get("lastDate", ""),
+                            }
+                        )
+                        existing_macs.add(rand_norm)
+                        rand_matches += 1
     else:
         print(f"Відсутні файли для перевірки у {arm_dir}. Крок ARM interim пропущено.")
 
@@ -415,6 +444,9 @@ def run_arm_interim(arm_dir: Path, dhcp_file: Path, verified_file: Path) -> None
     action = "Створено" if file_created else "Оновлено"
     print(f"{action} файл {verified_file}")
     print(f"Додано {len(rows_to_write)} нових записів.")
+    print(f"Опрацьовано {file_count} файлів.")
+    print(f"Знайдено {rand_matches} збігів по Random MAC.")
+    print(f"Пропущено {invalid_rand} рядків через невалідні Random MAC.")
 
 
 def run_mkp_interim(mkp_dir: Path, dhcp_file: Path, verified_file: Path) -> None:
@@ -454,43 +486,66 @@ def run_mkp_interim(mkp_dir: Path, dhcp_file: Path, verified_file: Path) -> None
                 existing_macs.add(mac)
 
     rows_to_write = []
+    file_count = 0
+    rand_matches = 0
+    invalid_rand = 0
 
     if mkp_dir.exists():
         for path in list_csv_files(mkp_dir):
+            file_count += 1
             for row in read_csv_mapped(
                 path,
                 "mkp",
                 ["mac", "model", "owner", "mkp_type", "randmac"],
             ):
                 mac_raw = (row.get("mac", "") or "").strip()
-                if not MAC_RE.fullmatch(mac_raw):
-                    continue
-                mac = mac_raw.upper().replace("-", ":")
-                if mac in existing_macs:
-                    continue
-                dhcp_row = dhcp_records.get(mac)
-                if not dhcp_row:
-                    continue
-                randmac_raw = (row.get("randmac", "") or "").strip()
-                if MAC_RE.fullmatch(randmac_raw):
-                    randmac = randmac_raw.upper().replace("-", ":")
-                else:
-                    randmac = ""
-                rows_to_write.append(
-                    {
-                        "type": "mkp",
-                        "source": dhcp_row.get("source", ""),
-                        "name": row.get("model", ""),
-                        "ip": dhcp_row.get("ip", ""),
-                        "mac": mac,
-                        "randmac": randmac,
-                        "owner": row.get("owner", ""),
-                        "note": normalize_note(row.get("mkp_type", "")),
-                        "firstDate": dhcp_row.get("firstDate", ""),
-                        "lastDate": dhcp_row.get("lastDate", ""),
-                    }
-                )
-                existing_macs.add(mac)
+                mac_norm = _normalize_mac(mac_raw)
+                if mac_raw and not MAC_RE.fullmatch(mac_norm):
+                    mac_norm = ""
+                rand_raw = (row.get("randmac", "") or "").strip()
+                rand_norm = _normalize_mac(rand_raw)
+                if rand_raw and not MAC_RE.fullmatch(rand_norm):
+                    invalid_rand += 1
+                    rand_norm = ""
+
+                if mac_norm and mac_norm not in existing_macs:
+                    dhcp_row = dhcp_records.get(mac_norm)
+                    if dhcp_row:
+                        rows_to_write.append(
+                            {
+                                "type": "mkp",
+                                "source": dhcp_row.get("source", ""),
+                                "name": row.get("model", ""),
+                                "ip": dhcp_row.get("ip", ""),
+                                "mac": mac_norm,
+                                "randmac": rand_norm,
+                                "owner": row.get("owner", ""),
+                                "note": normalize_note(row.get("mkp_type", "")),
+                                "firstDate": dhcp_row.get("firstDate", ""),
+                                "lastDate": dhcp_row.get("lastDate", ""),
+                            }
+                        )
+                        existing_macs.add(mac_norm)
+
+                if rand_norm and rand_norm not in existing_macs:
+                    dhcp_row = dhcp_records.get(rand_norm)
+                    if dhcp_row:
+                        rows_to_write.append(
+                            {
+                                "type": "rmkp",
+                                "source": dhcp_row.get("source", ""),
+                                "name": row.get("model", ""),
+                                "ip": dhcp_row.get("ip", ""),
+                                "mac": rand_norm,
+                                "randmac": mac_norm,
+                                "owner": row.get("owner", ""),
+                                "note": normalize_note(row.get("mkp_type", "")),
+                                "firstDate": dhcp_row.get("firstDate", ""),
+                                "lastDate": dhcp_row.get("lastDate", ""),
+                            }
+                        )
+                        existing_macs.add(rand_norm)
+                        rand_matches += 1
     else:
         print(f"Відсутні файли для перевірки у {mkp_dir}. Крок МКП interim пропущено.")
 
@@ -514,6 +569,9 @@ def run_mkp_interim(mkp_dir: Path, dhcp_file: Path, verified_file: Path) -> None
     action = "Створено" if file_created else "Оновлено"
     print(f"{action} файл {verified_file}")
     print(f"Додано {len(rows_to_write)} нових записів.")
+    print(f"Опрацьовано {file_count} файлів.")
+    print(f"Знайдено {rand_matches} збігів по Random MAC.")
+    print(f"Пропущено {invalid_rand} рядків через невалідні Random MAC.")
 
 def run_arm_check(arm_dir: Path, dhcp_file: Path, report_file: Path) -> None:
     """Generate ARM report from *arm_dir* against *dhcp_file*.
