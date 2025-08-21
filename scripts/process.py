@@ -149,6 +149,37 @@ def _load_note_mapping() -> dict[str, str]:
 NOTE_MAPPING = _load_note_mapping()
 
 
+def _load_ignore_macs() -> set[str]:
+    """Load MAC addresses to ignore from ``configs/local.yml`` if present."""
+
+    config_path = BASE_DIR / "configs" / "local.yml"
+    if yaml is None:
+        return set()
+    try:
+        with open(config_path, encoding="utf-8") as fh:
+            config = yaml.safe_load(fh) or {}
+    except FileNotFoundError:
+        return set()
+
+    macs = set()
+    invalid: list[str] = []
+    for value in ((config.get("ignore") or {}).get("mac") or {}).values():
+        mac_norm = _normalize_mac(str(value))
+        if MAC_RE.fullmatch(mac_norm):
+            macs.add(mac_norm)
+        else:
+            invalid.append(str(value))
+
+    if invalid:
+        print(
+            "Попередження: некоректні MAC-адреси у configs/local.yml: "
+            + ", ".join(invalid)
+        )
+    if macs:
+        print("Ігноруються MAC-адреси: " + ", ".join(sorted(macs)))
+    return macs
+
+
 def normalize_note(note: str) -> str:
     """Return note value replaced according to NOTE_MAPPING."""
 
@@ -296,8 +327,20 @@ def _parse_last_date(date_str: str, ip: str) -> str:
     return str(int(dt.timestamp()))
 
 
-def run_ubiq_interim(ubiq_dir: Path, dhcp_file: Path) -> None:
-    """Process Ubiq CSV files and append results to *dhcp_file*."""
+def run_ubiq_interim(
+    ubiq_dir: Path, dhcp_file: Path, ignore_macs: set[str] | None = None
+) -> None:
+    """Process Ubiq CSV files and append results to *dhcp_file*.
+
+    Parameters
+    ----------
+    ubiq_dir:
+        Directory containing Ubiq CSV files.
+    dhcp_file:
+        Path to the interim DHCP file to append to.
+    ignore_macs:
+        Optional set of normalised MAC addresses that should be skipped.
+    """
 
     ubiq_dir = Path(ubiq_dir)
     dhcp_file = Path(dhcp_file)
@@ -310,6 +353,8 @@ def run_ubiq_interim(ubiq_dir: Path, dhcp_file: Path) -> None:
     for path in files:
         for row in read_csv(path, columns=["source", "name", "mac", "ip", "date"]):
             mac = _normalize_mac(row.get("mac", ""))
+            if ignore_macs and mac in ignore_macs:
+                continue
             ip = _validate_ip(row.get("ip", ""))
             rows.append(
                 {
@@ -831,11 +876,23 @@ def main() -> None:
         return
 
     records = load_dhcp_logs(raw_dir)
+    ignore_macs = _load_ignore_macs()
+    before_count = len(records)
+    records = [
+        r
+        for r in records
+        if _normalize_mac(r.get("sourcMACAddress", "")) not in ignore_macs
+    ]
+    after_count = len(records)
+    print(
+        f"Зчитано {before_count} записів DHCP. Відфільтровано {before_count - after_count}. "
+        f"Залишилось {after_count}."
+    )
     normalized = normalize_dhcp_records(records)
     write_dhcp_interim(interim_file, normalized)
 
     ubiq_dir = BASE_DIR / paths.get("raw_ubiq", "data/raw/ubiq")
-    run_ubiq_interim(ubiq_dir, interim_file)
+    run_ubiq_interim(ubiq_dir, interim_file, ignore_macs)
 
     validation_dir = BASE_DIR / paths.get("raw_validation", "data/raw/validation")
     if list_csv_files(validation_dir):

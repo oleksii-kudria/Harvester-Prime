@@ -44,6 +44,20 @@ Directory and file locations used by the scripts can be adjusted in
 - `raw_mkp`: directory with MKP inventory CSV files.
 - `arm_mkp_report`: report produced from ARM and MKP checks.
 
+An optional `configs/local.yml` can define additional behaviour. To skip
+specific MAC addresses during processing add them under the
+`ignore.mac` section:
+
+```yaml
+ignore:
+  mac:
+    phone: "B6:87:29:FC:51:D2"
+    laptop: "56:97:0E:87:72:41"
+```
+
+MAC addresses listed there are excluded from the generated
+`data/interim/dhcp.csv` file.
+
 ## Raw data directories
 
 The script reads several directories under `data/raw`. Each CSV file must
