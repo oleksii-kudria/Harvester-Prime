@@ -864,7 +864,31 @@ def run_pending_check(
     print(f"Додано {len(rows_to_write)} нових записів.")
 
 
-def main() -> None:
+def clean_interim(directory: Path | None = None) -> None:
+    """Delete interim CSV files except examples.
+
+    Files ending with ``.example.csv`` are preserved. Missing directories or
+    files are ignored.
+    """
+
+    directory = Path(directory or BASE_DIR / "data/interim")
+    for path in directory.glob("*.csv"):
+        if path.name.endswith(".example.csv"):
+            print(f"[INFO] Залишено: {path.name}")
+            continue
+        try:
+            path.unlink()
+            print(f"[INFO] Видалено: {path.name}")
+        except FileNotFoundError:  # pragma: no cover - already deleted
+            pass
+
+
+def main(argv: list[str] | None = None) -> None:
+    argv = list(argv or sys.argv[1:])
+    if argv and argv[0] == "clean":
+        clean_interim()
+        argv = argv[1:]
+
     config = load_config()
     paths = config.get("paths", {})
 
