@@ -58,6 +58,22 @@ ignore:
 MAC addresses listed there are excluded from the generated
 `data/interim/dhcp.csv` file.
 
+The same configuration file can include application mappings under the
+`apps` section. Each mapping provides a `source` value to match against the
+`Тип ПК` column of ARM and MKP inventory files and a `target` string to append
+to the resulting `note` in `data/interim/verified.csv`:
+
+```yaml
+apps:
+  office:
+    source: "офіс"
+    target: "Microsoft Office"
+```
+
+With this configuration a workstation with `Тип ПК` set to `офіс` will have
+its note recorded as `Надано на перевірку. Microsoft Office`. If no mapping is
+found the note remains unchanged and a warning is printed during processing.
+
 ## Raw data directories
 
 The script reads several directories under `data/raw`. Each CSV file must
