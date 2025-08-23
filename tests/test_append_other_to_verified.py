@@ -39,6 +39,7 @@ def test_append_and_idempotent(tmp_path: Path) -> None:
     assert rows[0]["mac"] == "AA:BB:CC:DD:EE:FF"
     assert rows[0]["type"] == "router"
     assert rows[0]["source"] == "s1"
+    assert rows[0]["personal"] == "false"
 
     # Second run should not duplicate
     append_other_to_verified(other_dir, dhcp_file, verified_file)

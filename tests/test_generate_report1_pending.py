@@ -21,8 +21,8 @@ def test_generate_report1_includes_pending(tmp_path, monkeypatch):
 
     # Verified device row
     (base_dir / "data" / "interim" / "verified.csv").write_text(
-        "source,type,name,ip,mac,randmac,note\n"
-        "VSrc,router,RName,1.1.1.1,aa,,Extra\n",
+        "source,type,name,ip,mac,randmac,note,personal\n"
+        "VSrc,router,RName,1.1.1.1,aa,,Extra,false\n",
         encoding="utf-8",
     )
 
@@ -67,8 +67,8 @@ def test_generate_report1_handles_epoch_times(tmp_path, monkeypatch):
     )
 
     (base_dir / "data" / "interim" / "verified.csv").write_text(
-        "source,type,name,ip,mac,randmac,note\n"
-        "VSrc,router,RName,1.1.1.1,aa,,Extra\n",
+        "source,type,name,ip,mac,randmac,note,personal\n"
+        "VSrc,router,RName,1.1.1.1,aa,,Extra,false\n",
         encoding="utf-8",
     )
 
@@ -110,8 +110,8 @@ def test_generate_report1_handles_last_date_only(tmp_path, monkeypatch):
     )
 
     (base_dir / "data" / "interim" / "verified.csv").write_text(
-        "source,type,name,ip,mac,randmac,note\n"
-        "VSrc,router,RName,1.1.1.1,aa,,Extra\n",
+        "source,type,name,ip,mac,randmac,note,personal\n"
+        "VSrc,router,RName,1.1.1.1,aa,,Extra,false\n",
         encoding="utf-8",
     )
 

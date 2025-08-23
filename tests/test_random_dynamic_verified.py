@@ -23,8 +23,8 @@ def test_rarm_and_idempotent(tmp_path: Path) -> None:
     verified_file.parent.mkdir(parents=True, exist_ok=True)
 
     (arm_dir / "arm.csv").write_text(
-        "Static MAC,Hostname,Власник,Тип ПК,Random MAC\n"
-        "AA-BB-CC-DD-EE-FF,host1,,pc,b1-67-2d-f4-ca-49\n",
+        "Static MAC,Hostname,Власник,Тип ПК,Random MAC,Власність\n"
+        "AA-BB-CC-DD-EE-FF,host1,,pc,b1-67-2d-f4-ca-49,Особистий\n",
         encoding="utf-8",
     )
 
@@ -40,6 +40,7 @@ def test_rarm_and_idempotent(tmp_path: Path) -> None:
     assert rows[0]["type"] == "rarm"
     assert rows[0]["mac"] == "B1:67:2D:F4:CA:49"
     assert rows[0]["randmac"] == "AA:BB:CC:DD:EE:FF"
+    assert rows[0]["personal"] == "true"
 
     # Idempotent on second run
     run_arm_interim(arm_dir, dhcp_file, verified_file)
@@ -56,8 +57,8 @@ def test_rmkp_and_idempotent(tmp_path: Path) -> None:
     verified_file.parent.mkdir(parents=True, exist_ok=True)
 
     (mkp_dir / "mkp.csv").write_text(
-        "Статичний MAC,Модель,Відповідальний,Тип МКП,Динамічний MAC\n"
-        "AA-BB-CC-DD-EE-01,model1,owner1,,de.e4.16.ac.71.fe\n",
+        "Статичний MAC,Модель,Відповідальний,Тип МКП,Динамічний MAC,Категорія МКП\n"
+        "AA-BB-CC-DD-EE-01,model1,owner1,,de.e4.16.ac.71.fe,особистий\n",
         encoding="utf-8",
     )
 
@@ -73,6 +74,7 @@ def test_rmkp_and_idempotent(tmp_path: Path) -> None:
     assert rows[0]["type"] == "rmkp"
     assert rows[0]["mac"] == "DE:E4:16:AC:71:FE"
     assert rows[0]["randmac"] == "AA:BB:CC:DD:EE:01"
+    assert rows[0]["personal"] == "true"
 
     run_mkp_interim(mkp_dir, dhcp_file, verified_file)
     rows2 = read_rows(verified_file)
