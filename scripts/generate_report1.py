@@ -86,6 +86,7 @@ def build_verified_rows(
                     note += f". {suffix}"
                 else:
                     note = suffix
+                note += " Заявка на підключення до локальних мереж, складена, МАС-адреса закріплена за ІР-адресою."
             report_rows.append(
                 {
                     "source": row.get("source", ""),
