@@ -1,74 +1,44 @@
-from __future__ import annotations
-
-import csv
+from pathlib import Path
+import importlib
 import sys
 import types
-from pathlib import Path
 
 
-def read_rows(path: Path):
-    with open(path, newline="", encoding="utf-8") as fh:
-        return list(csv.DictReader(fh))
-
-
-def test_note_mapping_appended(tmp_path, capsys, monkeypatch):
-    base_dir = tmp_path
-    arm_dir = base_dir / "data/raw/arm"
-    dhcp_file = base_dir / "data/interim/dhcp.csv"
-    verified_file = base_dir / "data/interim/verified.csv"
-    arm_dir.mkdir(parents=True)
-    dhcp_file.parent.mkdir(parents=True)
-    verified_file.parent.mkdir(parents=True, exist_ok=True)
-
-    (arm_dir / "arm.csv").write_text(
-        "Static MAC,Hostname,Власник,Тип ПК,Random MAC,Власність\n"
-        "AA-AA-AA-AA-AA-01,pc1,owner1,офіс,,\n"
-        "AA-AA-AA-AA-AA-02,pc2,owner2, х Р О М ,,\n"
-        "AA-AA-AA-AA-AA-03,pc3,owner3,ігровий,,\n",
+def test_normalize_note_handles_empty_and_nonempty_target():
+    base_dir = Path(__file__).resolve().parent.parent
+    config_file = base_dir / "configs" / "local.yml"
+    config_file.write_text(
+        """apps:
+  empty_app:
+    source: "XY"
+    target: ""
+  value_app:
+    source: "AB"
+    target: "NewValue"
+""",
         encoding="utf-8",
     )
 
-    dhcp_file.write_text(
-        "source,ip,mac,firstDate,lastDate\n"
-        "s1,1.1.1.1,AA:AA:AA:AA:AA:01,1,2\n"
-        "s1,1.1.1.2,AA:AA:AA:AA:AA:02,1,2\n"
-        "s1,1.1.1.3,AA:AA:AA:AA:AA:03,1,2\n",
-        encoding="utf-8",
-    )
+    try:
+        sys.modules.pop("scripts.process", None)
+        sys.modules.setdefault("pandas", types.ModuleType("pandas"))
+        dummy_yaml = types.ModuleType("yaml")
+        dummy_yaml.safe_load = lambda stream: {
+            "apps": {
+                "empty_app": {"source": "XY", "target": ""},
+                "value_app": {"source": "AB", "target": "NewValue"},
+            }
+        }
+        sys.modules.setdefault("yaml", dummy_yaml)
+        process = importlib.import_module("scripts.process")
+        assert process.normalize_note("XY") == ""
+        assert process.normalize_note("xy") == ""
+        assert process.normalize_note("AB") == "NewValue"
+        assert process.normalize_note("ab") == "NewValue"
+        assert process.normalize_note("other") == "other"
+    finally:
+        config_file.unlink()
+        sys.modules.pop("scripts.process", None)
+        sys.modules.pop("pandas", None)
+        sys.modules.pop("yaml", None)
 
-    dummy_yaml = types.ModuleType("yaml")
-    dummy_yaml.safe_load = lambda stream: {
-        "arm": {
-            "mac": "Static MAC",
-            "hostname": "Hostname",
-            "owner": "Власник",
-            "pc_type": "Тип ПК",
-            "randmac": "Random MAC",
-            "ownership": "Власність",
-        },
-        "dhcp": {
-            "mac": "mac",
-            "ip": "ip",
-            "source": "source",
-            "firstDate": "firstDate",
-            "lastDate": "lastDate",
-        },
-    }
-    sys.modules["yaml"] = dummy_yaml
-    sys.modules.pop("scripts.process", None)
-    import scripts.process as process
-    monkeypatch.setattr(process, "BASE_DIR", base_dir)
-    process.SCHEMAS = dummy_yaml.safe_load(None)
-    process.NOTE_MAPPING = {
-        "офіс": "Microsoft Office",
-        "хром": "Google Chrome",
-    }
-
-    process.run_arm_interim(arm_dir, dhcp_file, verified_file)
-    rows = read_rows(verified_file)
-    assert rows[0]["note"] == "Надано на перевірку. Microsoft Office"
-    assert rows[1]["note"] == "Надано на перевірку. Google Chrome"
-    assert rows[2]["note"] == "Надано на перевірку."
-
-    captured = capsys.readouterr()
-    assert "ігровий" in captured.out
