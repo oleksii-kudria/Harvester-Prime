@@ -142,7 +142,9 @@ def _load_note_mapping() -> dict[str, str]:
         source = (app.get("source") or "").strip()
         target = app.get("target")
         if source and target is not None:
-            mapping[source.lower()] = target
+            # Keys are normalised to be case- and space-insensitive
+            key = source.lower().replace(" ", "")
+            mapping[key] = target
     return mapping
 
 
@@ -180,11 +182,30 @@ def _load_ignore_macs() -> set[str]:
     return macs
 
 
-def normalize_note(note: str) -> str:
-    """Return note value replaced according to NOTE_MAPPING."""
+def append_note_from_pc_type(note: str, pc_type: str) -> str:
+    """Return ``note`` with mapped ``pc_type`` target appended.
 
-    key = (note or "").strip().lower()
-    return NOTE_MAPPING.get(key, note)
+    Mapping values are loaded from :mod:`configs/local.yml`. Comparison is
+    performed ignoring case and whitespace. If ``pc_type`` is not present in
+    the mapping the note is returned unchanged and a warning is printed.
+    """
+
+    key = (pc_type or "").strip().lower().replace(" ", "")
+    target = NOTE_MAPPING.get(key)
+    if target:
+        note = (note or "").strip()
+        if note and not note.endswith("."):
+            note += "."
+        if note:
+            note += f" {target}"
+        else:
+            note = target
+    else:
+        if pc_type:
+            print(
+                f'Попередження: значення "{pc_type}" відсутнє у configs/local.yml'
+            )
+    return note
 
 
 def run_validation(validation_dir: Path, dhcp_file: Path, report_file: Path) -> None:
@@ -443,7 +464,9 @@ def run_arm_interim(arm_dir: Path, dhcp_file: Path, verified_file: Path) -> None
                                 "mac": mac,
                                 "randmac": "",
                                 "owner": row.get("owner", ""),
-                                "note": normalize_note(row.get("pc_type", "")),
+                                "note": append_note_from_pc_type(
+                                    "Надано на перевірку.", row.get("pc_type", "")
+                                ),
                                 "firstDate": dhcp_row.get("firstDate", ""),
                                 "lastDate": dhcp_row.get("lastDate", ""),
                                 "personal": "true" if is_personal else "false",
@@ -463,7 +486,9 @@ def run_arm_interim(arm_dir: Path, dhcp_file: Path, verified_file: Path) -> None
                                 "mac": rand_norm,
                                 "randmac": mac,
                                 "owner": row.get("owner", ""),
-                                "note": normalize_note(row.get("pc_type", "")),
+                                "note": append_note_from_pc_type(
+                                    "Надано на перевірку.", row.get("pc_type", "")
+                                ),
                                 "firstDate": dhcp_row.get("firstDate", ""),
                                 "lastDate": dhcp_row.get("lastDate", ""),
                                 "personal": "true" if is_personal else "false",
@@ -573,7 +598,9 @@ def run_mkp_interim(mkp_dir: Path, dhcp_file: Path, verified_file: Path) -> None
                                 "mac": mac_norm,
                                 "randmac": rand_norm,
                                 "owner": row.get("owner", ""),
-                                "note": normalize_note(row.get("mkp_type", "")),
+                                "note": append_note_from_pc_type(
+                                    "Надано на перевірку.", row.get("mkp_type", "")
+                                ),
                                 "firstDate": dhcp_row.get("firstDate", ""),
                                 "lastDate": dhcp_row.get("lastDate", ""),
                                 "personal": "true" if is_personal else "false",
@@ -593,7 +620,9 @@ def run_mkp_interim(mkp_dir: Path, dhcp_file: Path, verified_file: Path) -> None
                                 "mac": rand_norm,
                                 "randmac": mac_norm,
                                 "owner": row.get("owner", ""),
-                                "note": normalize_note(row.get("mkp_type", "")),
+                                "note": append_note_from_pc_type(
+                                    "Надано на перевірку.", row.get("mkp_type", "")
+                                ),
                                 "firstDate": dhcp_row.get("firstDate", ""),
                                 "lastDate": dhcp_row.get("lastDate", ""),
                                 "personal": "true" if is_personal else "false",
