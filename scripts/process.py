@@ -414,11 +414,13 @@ def run_arm_interim(arm_dir: Path, dhcp_file: Path, verified_file: Path) -> None
     if arm_dir.exists():
         for path in list_csv_files(arm_dir):
             file_count += 1
-            for row in read_csv_mapped(
-                path,
-                "arm",
-                ["mac", "hostname", "owner", "pc_type", "randmac", "ownership"],
-            ):
+            columns = ["mac", "hostname", "owner", "pc_type", "randmac", "ownership"]
+            rows = read_csv_mapped(path, "arm", columns)
+            print(f"DEBUG: Читання файлу {path}")
+            print(f"DEBUG: Стовпці: {columns}")
+            for row in rows:
+                print(f"DEBUG: Ключі: {list(row.keys())}")
+                print(f"DEBUG: Дані: {row}")
                 mac_raw = (row.get("mac", "") or "").strip()
                 if MAC_RE.fullmatch(mac_raw):
                     mac = mac_raw.upper().replace("-", ":")
@@ -491,6 +493,10 @@ def run_arm_interim(arm_dir: Path, dhcp_file: Path, verified_file: Path) -> None
         "lastDate",
         "personal",
     ]
+    print(f"DEBUG: Запис до файлу {verified_file}")
+    print(f"DEBUG: Стовпці: {fieldnames}")
+    for row in rows_to_write:
+        print(f"DEBUG: Дані: {row}")
     file_created = write_csv(verified_file, fieldnames, rows_to_write, append=True)
     action = "Створено" if file_created else "Оновлено"
     print(f"{action} файл {verified_file}")
