@@ -37,7 +37,8 @@ def read_csv(path: Path, columns: Optional[Iterable[str]] = DHCP_COLUMNS) -> Lis
         columns from the file are included.
     """
     rows: List[Dict[str, str]] = []
-    with open(path, newline="", encoding="utf-8") as fh:
+    # ``utf-8-sig`` ensures an optional BOM is stripped automatically
+    with open(path, newline="", encoding="utf-8-sig") as fh:
         reader = csv.DictReader(fh, skipinitialspace=True)
         reader.fieldnames = [h.strip() for h in reader.fieldnames or []]
         if columns is None:
