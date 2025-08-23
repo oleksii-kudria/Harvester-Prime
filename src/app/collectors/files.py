@@ -38,12 +38,14 @@ def read_csv(path: Path, columns: Optional[Iterable[str]] = DHCP_COLUMNS) -> Lis
     """
     rows: List[Dict[str, str]] = []
     with open(path, newline="", encoding="utf-8") as fh:
-        reader = csv.DictReader(fh)
+        reader = csv.DictReader(fh, skipinitialspace=True)
+        reader.fieldnames = [h.strip() for h in reader.fieldnames or []]
         if columns is None:
-            rows.extend(row for row in reader)
+            for row in reader:
+                rows.append({k: (v or "").strip() for k, v in row.items()})
         else:
             for row in reader:
-                rows.append({col: row.get(col, "") for col in columns})
+                rows.append({col: row.get(col, "").strip() for col in columns})
     return rows
 
 
