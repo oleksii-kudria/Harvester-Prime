@@ -1,11 +1,11 @@
 arm:
 #  mac: "MAC"
-  mac: "Static MAC"
+  mac: "staticMac"
   hostname: "Hostname"
-  owner: "Власник"
-  pc_type: "Тип ПК"
+  owner: "owner"
+  pc_type: "pcType"
   ip: "IP"
-  randmac: "Random MAC"
+  randmac: "randomMac"
   ownership: "Власність"
 mkp:
   mac: "Статичний MAC"
