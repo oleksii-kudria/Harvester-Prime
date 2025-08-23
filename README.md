@@ -68,8 +68,8 @@ contain the listed columns. Columns are read as text unless noted otherwise.
 | `data/raw/dhcp/*.csv` | `logSourceIdentifier`, `sourcMACAddress`, `payloadAsUTF`, `deviceTime` | MAC in `sourcMACAddress` must be `XX:XX:XX:XX:XX:XX` or `XX-XX-XX-XX-XX-XX`. `deviceTime` is a Unix timestamp in milliseconds. IP and host name are parsed from `payloadAsUTF`. |
 | `data/raw/ubiq/*.csv` | `source`, `name`, `mac`, `ip`, `date` | `mac` uses the same MAC format as above. `ip` is an IPv4 address. `date` is in `%b %d %Y %I:%M %p` (e.g. `Sep 19 2024 07:24 PM`). |
 | `data/raw/validation/*.csv` | `ip`, `mac` | `ip` is IPv4, `mac` uses standard MAC format. |
-| `data/raw/arm/*.csv` | `MAC`, `Hostname`, `Власник`, `Тип ПК`, `IP` | `MAC` is a physical MAC address, `IP` is IPv4. Other columns are free text describing the workstation. |
-| `data/raw/mkp/*.csv` | `Статичний MAC`, `Модель`, `Відповідальний`, `Тип МКП`, `Динамічний MAC` | `Статичний MAC` and `Динамічний MAC` are MAC addresses. The rest are free text. |
+| `data/raw/arm/*.csv` | `MAC`, `Hostname`, `Власник`, `Тип ПК`, `IP`, `Власність` | `MAC` is a physical MAC address, `IP` is IPv4. Other columns are free text describing the workstation. |
+| `data/raw/mkp/*.csv` | `Статичний MAC`, `Модель`, `Відповідальний`, `Тип МКП`, `Динамічний MAC`, `Категорія МКП` | `Статичний MAC` and `Динамічний MAC` are MAC addresses. The rest are free text. |
 | `data/raw/other/*.csv` | `type`, `name`, `mac` | `mac` must be a valid MAC address. `type` describes the device class (e.g. printer). |
 
 ## Processing steps
@@ -103,7 +103,7 @@ The processing steps produce these CSV files:
 - `data/interim/dhcp.csv` – columns: `source`, `ip`, `mac`, `name`,
   `firstDate`, `lastDate`.
 - `data/interim/verified.csv` – columns: `type`, `source`, `name`, `ip`,
-  `mac`, `randmac`, `owner`, `note`, `firstDate`, `lastDate`.
+  `mac`, `randmac`, `owner`, `note`, `firstDate`, `lastDate`, `personal`.
 - `data/interim/pending.csv` – columns: `type`, `source`, `ip`, `mac`,
   `name`, `firstDate`, `lastDate`.
 - `data/result/report1.csv` – columns: `name`, `ipmac`, `note`.

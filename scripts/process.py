@@ -374,9 +374,9 @@ def run_arm_interim(arm_dir: Path, dhcp_file: Path, verified_file: Path) -> None
     """Add ARM records matched with DHCP data to *verified_file*.
 
     Rows are written with columns ``type``, ``source``, ``name``, ``ip``,
-    ``mac``, ``randmac``, ``owner``, ``note``, ``firstDate`` and ``lastDate``.
-    Only records where the MAC address from ``arm_dir`` is present in
-    ``dhcp_file`` are included. Existing entries in *verified_file* are
+    ``mac``, ``randmac``, ``owner``, ``note``, ``firstDate``, ``lastDate`` and
+    ``personal``. Only records where the MAC address from ``arm_dir`` is present
+    in ``dhcp_file`` are included. Existing entries in *verified_file* are
     preserved and duplicates are skipped.
     """
 
@@ -415,7 +415,9 @@ def run_arm_interim(arm_dir: Path, dhcp_file: Path, verified_file: Path) -> None
         for path in list_csv_files(arm_dir):
             file_count += 1
             for row in read_csv_mapped(
-                path, "arm", ["mac", "hostname", "owner", "pc_type", "randmac"]
+                path,
+                "arm",
+                ["mac", "hostname", "owner", "pc_type", "randmac", "ownership"],
             ):
                 mac_raw = (row.get("mac", "") or "").strip()
                 if MAC_RE.fullmatch(mac_raw):
@@ -427,6 +429,7 @@ def run_arm_interim(arm_dir: Path, dhcp_file: Path, verified_file: Path) -> None
                 if rand_raw and not MAC_RE.fullmatch(rand_norm):
                     invalid_rand += 1
                     rand_norm = ""
+                is_personal = (row.get("ownership", "") or "").strip().lower() == "особистий"
 
                 if mac and mac not in existing_macs:
                     dhcp_row = dhcp_records.get(mac)
@@ -443,6 +446,7 @@ def run_arm_interim(arm_dir: Path, dhcp_file: Path, verified_file: Path) -> None
                                 "note": normalize_note(row.get("pc_type", "")),
                                 "firstDate": dhcp_row.get("firstDate", ""),
                                 "lastDate": dhcp_row.get("lastDate", ""),
+                                "personal": "true" if is_personal else "false",
                             }
                         )
                         existing_macs.add(mac)
@@ -462,6 +466,7 @@ def run_arm_interim(arm_dir: Path, dhcp_file: Path, verified_file: Path) -> None
                                 "note": normalize_note(row.get("pc_type", "")),
                                 "firstDate": dhcp_row.get("firstDate", ""),
                                 "lastDate": dhcp_row.get("lastDate", ""),
+                                "personal": "true" if is_personal else "false",
                             }
                         )
                         existing_macs.add(rand_norm)
@@ -484,6 +489,7 @@ def run_arm_interim(arm_dir: Path, dhcp_file: Path, verified_file: Path) -> None
         "note",
         "firstDate",
         "lastDate",
+        "personal",
     ]
     file_created = write_csv(verified_file, fieldnames, rows_to_write, append=True)
     action = "Створено" if file_created else "Оновлено"
@@ -501,7 +507,8 @@ def run_mkp_interim(mkp_dir: Path, dhcp_file: Path, verified_file: Path) -> None
     files and writes rows with ``type`` set to ``"mkp"``. The resulting rows
     also include the ``source`` column from DHCP data. An additional ``randmac``
     column is populated from the "Динамічний MAC" field when it contains a
-    valid MAC address; otherwise the column is left empty.
+    valid MAC address; otherwise the column is left empty. Each row also
+    contains a ``personal`` flag derived from the ``Категорія МКП`` column.
     """
 
     mkp_dir = Path(mkp_dir)
@@ -541,7 +548,7 @@ def run_mkp_interim(mkp_dir: Path, dhcp_file: Path, verified_file: Path) -> None
             for row in read_csv_mapped(
                 path,
                 "mkp",
-                ["mac", "model", "owner", "mkp_type", "randmac"],
+                ["mac", "model", "owner", "mkp_type", "randmac", "category"],
             ):
                 mac_raw = (row.get("mac", "") or "").strip()
                 mac_norm = _normalize_mac(mac_raw)
@@ -552,6 +559,7 @@ def run_mkp_interim(mkp_dir: Path, dhcp_file: Path, verified_file: Path) -> None
                 if rand_raw and not MAC_RE.fullmatch(rand_norm):
                     invalid_rand += 1
                     rand_norm = ""
+                is_personal = (row.get("category", "") or "").strip().lower() == "особистий"
 
                 if mac_norm and mac_norm not in existing_macs:
                     dhcp_row = dhcp_records.get(mac_norm)
@@ -568,6 +576,7 @@ def run_mkp_interim(mkp_dir: Path, dhcp_file: Path, verified_file: Path) -> None
                                 "note": normalize_note(row.get("mkp_type", "")),
                                 "firstDate": dhcp_row.get("firstDate", ""),
                                 "lastDate": dhcp_row.get("lastDate", ""),
+                                "personal": "true" if is_personal else "false",
                             }
                         )
                         existing_macs.add(mac_norm)
@@ -587,6 +596,7 @@ def run_mkp_interim(mkp_dir: Path, dhcp_file: Path, verified_file: Path) -> None
                                 "note": normalize_note(row.get("mkp_type", "")),
                                 "firstDate": dhcp_row.get("firstDate", ""),
                                 "lastDate": dhcp_row.get("lastDate", ""),
+                                "personal": "true" if is_personal else "false",
                             }
                         )
                         existing_macs.add(rand_norm)
@@ -609,6 +619,7 @@ def run_mkp_interim(mkp_dir: Path, dhcp_file: Path, verified_file: Path) -> None
         "note",
         "firstDate",
         "lastDate",
+        "personal",
     ]
     file_created = write_csv(verified_file, fieldnames, rows_to_write, append=True)
     action = "Створено" if file_created else "Оновлено"

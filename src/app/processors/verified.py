@@ -28,7 +28,8 @@ def append_other_to_verified(
     """Append devices from ``other_dir`` matched with DHCP data.
 
     Rows from ``other_dir`` are matched to ``dhcp_file`` by MAC address.
-    New rows are appended to ``verified_file`` while avoiding duplicates.
+    New rows are appended to ``verified_file`` while avoiding duplicates. The
+    ``personal`` flag for these rows is always set to ``false``.
     """
 
     other_dir = Path(other_dir)
@@ -85,6 +86,7 @@ def append_other_to_verified(
         "note",
         "firstDate",
         "lastDate",
+        "personal",
     ]
 
     new_rows: List[Dict[str, str]] = []
@@ -114,6 +116,7 @@ def append_other_to_verified(
                         "note": "",
                         "firstDate": dhcp_row.get("firstDate", ""),
                         "lastDate": dhcp_row.get("lastDate", ""),
+                        "personal": "false",
                     }
                     key = (
                         out_row["type"],

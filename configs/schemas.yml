@@ -6,12 +6,14 @@ arm:
   pc_type: "Тип ПК"
   ip: "IP"
   randmac: "Random MAC"
+  ownership: "Власність"
 mkp:
   mac: "Статичний MAC"
   model: "Модель"
   owner: "Відповідальний"
   mkp_type: "Тип МКП"
   randmac: "Динамічний MAC"
+  category: "Категорія МКП"
 dhcp:
   mac: "mac"
   name: "name"
