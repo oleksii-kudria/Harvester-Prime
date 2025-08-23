@@ -68,6 +68,24 @@ def build_verified_rows(
                     f"На пристрої ввімкнено генерацію випадкової MAC-адреси - {randmac_val}"
                 )
             note = "\n".join(note_parts)
+
+            personal_val = row.get("personal", "").lower()
+            if personal_val == "true":
+                suffix = "Пристрій особистий."
+            elif personal_val == "false":
+                suffix = "Пристрій службовий."
+            else:
+                suffix = ""
+
+            if suffix:
+                if note.endswith("\n"):
+                    note += suffix
+                elif note.endswith("."):
+                    note += f" {suffix}"
+                elif note:
+                    note += f". {suffix}"
+                else:
+                    note = suffix
             report_rows.append(
                 {
                     "source": row.get("source", ""),
