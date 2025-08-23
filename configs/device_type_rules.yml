@@ -22,6 +22,7 @@ rules:
   - type: mkp
     mode: prefix
     patterns:
+      - "A24-"
       - "A36-"
       - "A51-"
       - "A52-"
@@ -54,7 +55,9 @@ rules:
   - type: mkp
     mode: contains
     patterns:
+      - "21081111RG"
       - "Redmi9T"
+      - "RedmiNote"
 
   - type: router
     mode: regex
@@ -64,10 +67,11 @@ rules:
   - type: router
     mode: contains
     patterns:
-      - "ArcherAX72"
       - "Archer_C6"
-      - "ArcherA64"
       - "Archer_C20"
+      - "ArcherA64"
+      - "ArcherAX10"
+      - "ArcherAX72"
 
   - type: watch
     mode: contains
