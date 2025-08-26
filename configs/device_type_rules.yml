@@ -2,6 +2,7 @@ rules:
   - type: arm
     mode: prefix
     patterns:
+      - "Acer-Nitro-"
       - "Blanket-"
       - "DESKTOP-"
       - "DESKTOP_"
@@ -9,6 +10,7 @@ rules:
       - "LAPTOP-"
       - "LAPTOP_"
       - "Mac"
+      - "NB-A"
       - "WIN-"
       - "WIN_"
       - "WINDOWS-"
@@ -18,6 +20,7 @@ rules:
     mode: contains
     patterns:
       - "TUF-Gaming"
+      - "-Komp"
 
   - type: mkp
     mode: prefix
@@ -35,10 +38,12 @@ rules:
       - "iPhone"
       - "Lenovo Tab"
       - "M52-"
+      - "moto-"
       - "Motorola Moto"
       - "OnePlus-"
       - "OPPO-"
       - "Pixel-"
+      - "POCO-"
       - "Realme-"
       - "Redmi-"
       - "S10-"
@@ -47,6 +52,7 @@ rules:
       - "S22-"
       - "S23-"
       - "S24-"
+      - "S25-"
       - "SM73GA5G"
       - "Tab-"
       - "TB330FU"
@@ -56,8 +62,10 @@ rules:
     mode: contains
     patterns:
       - "21081111RG"
+      - "M2102J20SG"
       - "Redmi9T"
       - "RedmiNote"
+      - "Tab-S7"
 
   - type: router
     mode: regex
@@ -72,21 +80,26 @@ rules:
       - "ArcherA64"
       - "ArcherAX10"
       - "ArcherAX72"
+      - "Keenetic-"
+      - "MikroTik"
 
   - type: watch
     mode: contains
     patterns:
       - "Smartwatch"
+      - "Watch"
 
   - type: printer
     mode: prefix
     patterns:
       - "Canonfb5ba1"
+      - "EPSON6"
 
   - type: tv
     mode: prefix
     patterns:
       - "Hisense Vision"
+      - "Tv1x"
 
 default: unknown
 options:
