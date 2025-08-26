@@ -55,6 +55,10 @@ def load_schemas() -> dict:
 SCHEMAS = load_schemas()
 
 
+# Global MAC address used for debug tracing. When set, functions in this
+# module will emit detailed information about records involving this MAC.
+DEBUG_MAC: str | None = None
+
 def rename_hostname_column(path: Path) -> None:
     """Rename ``hostname`` column to ``name`` in *path* if present."""
 
@@ -203,6 +207,8 @@ def run_validation(validation_dir: Path, dhcp_file: Path, report_file: Path) -> 
         for path in list_csv_files(validation_dir):
             for row in read_csv_mapped(path, "validation", ["ip", "mac"]):
                 mac = (row.get("mac", "") or "").strip().upper().replace("-", ":")
+                if _is_debug_mac(mac):
+                    _debug("VALIDATION read", mac, {"path": str(path), **row})
                 validation_records.append({"ip": row.get("ip", ""), "mac": mac})
 
     # Load DHCP records indexed by normalised MAC
@@ -213,6 +219,8 @@ def run_validation(validation_dir: Path, dhcp_file: Path, report_file: Path) -> 
         ):
             mac = (row.get("mac", "") or "").strip().upper().replace("-", ":")
             dhcp_records[mac] = row
+            if _is_debug_mac(mac):
+                _debug("VALIDATION dhcp", mac, row)
 
     matched_macs = set()
     report_rows = []
@@ -222,22 +230,22 @@ def run_validation(validation_dir: Path, dhcp_file: Path, report_file: Path) -> 
         ip = record.get("ip", "")
         dhcp_row = dhcp_records.get(mac)
         if dhcp_row:
-            report_rows.append(
-                {
-                    "name": dhcp_row.get("name", ""),
-                    "ipmac": f"{dhcp_row.get('ip', '')}\n{mac}",
-                    "note": "Надано на перевірку.",
-                }
-            )
+            out_row = {
+                "name": dhcp_row.get("name", ""),
+                "ipmac": f"{dhcp_row.get('ip', '')}\n{mac}",
+                "note": "Надано на перевірку.",
+            }
+            report_rows.append(out_row)
             matched_macs.add(mac)
+            _debug("VALIDATION match", mac, out_row)
         else:
-            report_rows.append(
-                {
-                    "name": "unknown",
-                    "ipmac": f"{ip}\n{mac}",
-                    "note": "Пристрій відсутній на локації.",
-                }
-            )
+            out_row = {
+                "name": "unknown",
+                "ipmac": f"{ip}\n{mac}",
+                "note": "Пристрій відсутній на локації.",
+            }
+            report_rows.append(out_row)
+            _debug("VALIDATION missing", mac, out_row)
 
     for mac, dhcp_row in dhcp_records.items():
         if mac in matched_macs:
@@ -247,13 +255,13 @@ def run_validation(validation_dir: Path, dhcp_file: Path, report_file: Path) -> 
         note = "Не надано для перевірки."
         if first_seen or last_seen:
             note += f" Перше підключення – {first_seen}, останнє підключення – {last_seen}."
-        report_rows.append(
-            {
-                "name": dhcp_row.get("name", ""),
-                "ipmac": f"{dhcp_row.get('ip', '')}\n{mac}",
-                "note": note,
-            }
-        )
+        out_row = {
+            "name": dhcp_row.get("name", ""),
+            "ipmac": f"{dhcp_row.get('ip', '')}\n{mac}",
+            "note": note,
+        }
+        report_rows.append(out_row)
+        _debug("VALIDATION unmatched dhcp", mac, out_row)
 
     fieldnames = ["name", "ipmac", "note"]
     file_created = write_csv(report_file, fieldnames, report_rows)
@@ -281,6 +289,21 @@ def _normalize_mac(value: str) -> str:
         parts = [cleaned[i : i + 2] for i in range(0, 12, 2)]
         return ":".join(parts).upper()
     return raw.upper().replace("-", ":")
+
+
+def _is_debug_mac(mac: str) -> bool:
+    """Return True if *mac* matches the global ``DEBUG_MAC``."""
+
+    return DEBUG_MAC is not None and _normalize_mac(mac) == DEBUG_MAC
+
+
+def _debug(stage: str, mac: str, info: dict | None = None) -> None:
+    """Print *info* when processing *mac* if it matches ``DEBUG_MAC``."""
+
+    if _is_debug_mac(mac):
+        if info is None:
+            info = {}
+        print(f"DEBUG [{stage}] {info}")
 
 
 def _validate_ip(value: str) -> str:
@@ -353,7 +376,10 @@ def run_ubiq_interim(
     for path in files:
         for row in read_csv(path, columns=["source", "name", "mac", "ip", "date"]):
             mac = _normalize_mac(row.get("mac", ""))
+            if _is_debug_mac(mac):
+                _debug("UBIQ read", mac, {"path": str(path), **row})
             if ignore_macs and mac in ignore_macs:
+                _debug("UBIQ ignored", mac, {"path": str(path)})
                 continue
             ip = _validate_ip(row.get("ip", ""))
             rows.append(
@@ -366,6 +392,7 @@ def run_ubiq_interim(
                     "lastDate": _parse_last_date(row.get("date", ""), ip),
                 }
             )
+            _debug("UBIQ append", mac, rows[-1])
 
     write_dhcp_interim(dhcp_file, rows)
 
@@ -416,17 +443,17 @@ def run_arm_interim(arm_dir: Path, dhcp_file: Path, verified_file: Path) -> None
             file_count += 1
             columns = ["mac", "hostname", "owner", "pc_type", "randmac", "ownership"]
             rows = read_csv_mapped(path, "arm", columns)
-            print(f"DEBUG: Читання файлу {path}")
-            print(f"DEBUG: Стовпці: {columns}")
             for row in rows:
-                print(f"DEBUG: Ключі: {list(row.keys())}")
-                print(f"DEBUG: Дані: {row}")
                 mac_raw = (row.get("mac", "") or "").strip()
+                if _is_debug_mac(mac_raw):
+                    _debug("ARM raw", mac_raw, {"path": str(path), **row})
                 if MAC_RE.fullmatch(mac_raw):
                     mac = mac_raw.upper().replace("-", ":")
                 else:
                     mac = ""
                 rand_raw = (row.get("randmac", "") or "").strip()
+                if _is_debug_mac(rand_raw):
+                    _debug("ARM randraw", rand_raw, {"path": str(path), **row})
                 rand_norm = _normalize_mac(rand_raw)
                 if rand_raw and not MAC_RE.fullmatch(rand_norm):
                     invalid_rand += 1
@@ -436,41 +463,40 @@ def run_arm_interim(arm_dir: Path, dhcp_file: Path, verified_file: Path) -> None
                 if mac and mac not in existing_macs:
                     dhcp_row = dhcp_records.get(mac)
                     if dhcp_row:
-                        rows_to_write.append(
-                            {
-                                "type": "arm",
-                                "source": dhcp_row.get("source", ""),
-                                "name": row.get("hostname", ""),
-                                "ip": dhcp_row.get("ip", ""),
-                                "mac": mac,
-                                "randmac": "",
-                                "owner": row.get("owner", ""),
-                                "note": normalize_note(row.get("pc_type", "")),
-                                "firstDate": dhcp_row.get("firstDate", ""),
-                                "lastDate": dhcp_row.get("lastDate", ""),
-                                "personal": "true" if is_personal else "false",
-                            }
-                        )
+                        out_row = {
+                            "type": "arm",
+                            "source": dhcp_row.get("source", ""),
+                            "name": row.get("hostname", ""),
+                            "ip": dhcp_row.get("ip", ""),
+                            "mac": mac,
+                            "randmac": "",
+                            "owner": row.get("owner", ""),
+                            "note": normalize_note(row.get("pc_type", "")),
+                            "firstDate": dhcp_row.get("firstDate", ""),
+                            "lastDate": dhcp_row.get("lastDate", ""),
+                            "personal": "true" if is_personal else "false",
+                        }
+                        rows_to_write.append(out_row)
                         existing_macs.add(mac)
+                        _debug("ARM append", mac, out_row)
 
                 if rand_norm and rand_norm not in existing_macs:
                     dhcp_row = dhcp_records.get(rand_norm)
                     if dhcp_row:
-                        rows_to_write.append(
-                            {
-                                "type": "rarm",
-                                "source": dhcp_row.get("source", ""),
-                                "name": row.get("hostname", ""),
-                                "ip": dhcp_row.get("ip", ""),
-                                "mac": rand_norm,
-                                "randmac": mac,
-                                "owner": row.get("owner", ""),
-                                "note": normalize_note(row.get("pc_type", "")),
-                                "firstDate": dhcp_row.get("firstDate", ""),
-                                "lastDate": dhcp_row.get("lastDate", ""),
-                                "personal": "true" if is_personal else "false",
-                            }
-                        )
+                        out_row = {
+                            "type": "rarm",
+                            "source": dhcp_row.get("source", ""),
+                            "name": row.get("hostname", ""),
+                            "ip": dhcp_row.get("ip", ""),
+                            "mac": rand_norm,
+                            "randmac": mac,
+                            "owner": row.get("owner", ""),
+                            "note": normalize_note(row.get("pc_type", "")),
+                            "firstDate": dhcp_row.get("firstDate", ""),
+                            "lastDate": dhcp_row.get("lastDate", ""),
+                            "personal": "true" if is_personal else "false",
+                        }
+                        rows_to_write.append(out_row)
                         existing_macs.add(rand_norm)
                         rand_matches += 1
     else:
@@ -493,10 +519,6 @@ def run_arm_interim(arm_dir: Path, dhcp_file: Path, verified_file: Path) -> None
         "lastDate",
         "personal",
     ]
-    print(f"DEBUG: Запис до файлу {verified_file}")
-    print(f"DEBUG: Стовпці: {fieldnames}")
-    for row in rows_to_write:
-        print(f"DEBUG: Дані: {row}")
     file_created = write_csv(verified_file, fieldnames, rows_to_write, append=True)
     action = "Створено" if file_created else "Оновлено"
     print(f"{action} файл {verified_file}")
@@ -557,10 +579,14 @@ def run_mkp_interim(mkp_dir: Path, dhcp_file: Path, verified_file: Path) -> None
                 ["mac", "model", "owner", "mkp_type", "randmac", "category"],
             ):
                 mac_raw = (row.get("mac", "") or "").strip()
+                if _is_debug_mac(mac_raw):
+                    _debug("MKP raw", mac_raw, {"path": str(path), **row})
                 mac_norm = _normalize_mac(mac_raw)
                 if mac_raw and not MAC_RE.fullmatch(mac_norm):
                     mac_norm = ""
                 rand_raw = (row.get("randmac", "") or "").strip()
+                if _is_debug_mac(rand_raw):
+                    _debug("MKP randraw", rand_raw, {"path": str(path), **row})
                 rand_norm = _normalize_mac(rand_raw)
                 if rand_raw and not MAC_RE.fullmatch(rand_norm):
                     invalid_rand += 1
@@ -570,43 +596,43 @@ def run_mkp_interim(mkp_dir: Path, dhcp_file: Path, verified_file: Path) -> None
                 if mac_norm and mac_norm not in existing_macs:
                     dhcp_row = dhcp_records.get(mac_norm)
                     if dhcp_row:
-                        rows_to_write.append(
-                            {
-                                "type": "mkp",
-                                "source": dhcp_row.get("source", ""),
-                                "name": row.get("model", ""),
-                                "ip": dhcp_row.get("ip", ""),
-                                "mac": mac_norm,
-                                "randmac": rand_norm,
-                                "owner": row.get("owner", ""),
-                                "note": normalize_note(row.get("mkp_type", "")),
-                                "firstDate": dhcp_row.get("firstDate", ""),
-                                "lastDate": dhcp_row.get("lastDate", ""),
-                                "personal": "true" if is_personal else "false",
-                            }
-                        )
+                        out_row = {
+                            "type": "mkp",
+                            "source": dhcp_row.get("source", ""),
+                            "name": row.get("model", ""),
+                            "ip": dhcp_row.get("ip", ""),
+                            "mac": mac_norm,
+                            "randmac": rand_norm,
+                            "owner": row.get("owner", ""),
+                            "note": normalize_note(row.get("mkp_type", "")),
+                            "firstDate": dhcp_row.get("firstDate", ""),
+                            "lastDate": dhcp_row.get("lastDate", ""),
+                            "personal": "true" if is_personal else "false",
+                        }
+                        rows_to_write.append(out_row)
                         existing_macs.add(mac_norm)
+                        _debug("MKP append", mac_norm, out_row)
 
                 if rand_norm and rand_norm not in existing_macs:
                     dhcp_row = dhcp_records.get(rand_norm)
                     if dhcp_row:
-                        rows_to_write.append(
-                            {
-                                "type": "rmkp",
-                                "source": dhcp_row.get("source", ""),
-                                "name": row.get("model", ""),
-                                "ip": dhcp_row.get("ip", ""),
-                                "mac": rand_norm,
-                                "randmac": mac_norm,
-                                "owner": row.get("owner", ""),
-                                "note": normalize_note(row.get("mkp_type", "")),
-                                "firstDate": dhcp_row.get("firstDate", ""),
-                                "lastDate": dhcp_row.get("lastDate", ""),
-                                "personal": "true" if is_personal else "false",
-                            }
-                        )
+                        out_row = {
+                            "type": "rmkp",
+                            "source": dhcp_row.get("source", ""),
+                            "name": row.get("model", ""),
+                            "ip": dhcp_row.get("ip", ""),
+                            "mac": rand_norm,
+                            "randmac": mac_norm,
+                            "owner": row.get("owner", ""),
+                            "note": normalize_note(row.get("mkp_type", "")),
+                            "firstDate": dhcp_row.get("firstDate", ""),
+                            "lastDate": dhcp_row.get("lastDate", ""),
+                            "personal": "true" if is_personal else "false",
+                        }
+                        rows_to_write.append(out_row)
                         existing_macs.add(rand_norm)
                         rand_matches += 1
+                        _debug("MKP append rand", rand_norm, out_row)
     else:
         print(f"Відсутні файли для перевірки у {mkp_dir}. Крок МКП interim пропущено.")
 
@@ -656,6 +682,8 @@ def run_arm_check(arm_dir: Path, dhcp_file: Path, report_file: Path) -> None:
     for row in read_csv_mapped(dhcp_file, "dhcp", ["mac", "ip"]):
         mac = (row.get("mac", "") or "").strip().upper().replace("-", ":")
         dhcp_records[mac] = row
+        if _is_debug_mac(mac):
+            _debug("ARM_CHECK dhcp", mac, row)
 
     # Load existing MACs from the report to avoid duplicates
     existing_macs = set()
@@ -678,36 +706,40 @@ def run_arm_check(arm_dir: Path, dhcp_file: Path, report_file: Path) -> None:
                 path, "arm", ["mac", "hostname", "owner", "pc_type", "ip"]
             ):
                 mac_raw = row.get("mac", "").strip()
+                if _is_debug_mac(mac_raw):
+                    _debug("ARM_CHECK raw", mac_raw, {"path": str(path), **row})
                 if not MAC_RE.fullmatch(mac_raw):
                     continue
                 mac = mac_raw.upper().replace("-", ":")
                 if mac in existing_macs:
                     duplicates += 1
+                    if _is_debug_mac(mac):
+                        _debug("ARM_CHECK duplicate", mac, row)
                     continue
                 hostname = row.get("hostname", "")
                 owner = row.get("owner", "")
                 type_pc = row.get("pc_type", "")
                 dhcp_row = dhcp_records.get(mac)
                 if dhcp_row:
-                    matched_rows.append(
-                        {
-                            "name": f"АРМ\n{hostname}",
-                            "ipmac": f"{dhcp_row.get('ip', '')}\n{mac}",
-                            "owner": owner,
-                            "note": type_pc,
-                        }
-                    )
+                    out_row = {
+                        "name": f"АРМ\n{hostname}",
+                        "ipmac": f"{dhcp_row.get('ip', '')}\n{mac}",
+                        "owner": owner,
+                        "note": type_pc,
+                    }
+                    matched_rows.append(out_row)
+                    _debug("ARM_CHECK match", mac, out_row)
                 else:
                     ip = (row.get("IP", "") or "").strip()
                     ipmac = f"{ip}\n{mac}" if ip else f"-\n{mac}"
-                    unmatched_rows.append(
-                        {
-                            "name": f"АРМ\n{hostname}",
-                            "ipmac": ipmac,
-                            "owner": owner,
-                            "note": type_pc,
-                        }
-                    )
+                    out_row = {
+                        "name": f"АРМ\n{hostname}",
+                        "ipmac": ipmac,
+                        "owner": owner,
+                        "note": type_pc,
+                    }
+                    unmatched_rows.append(out_row)
+                    _debug("ARM_CHECK unmatched", mac, out_row)
                 existing_macs.add(mac)
     else:
         print(f"Відсутні файли для перевірки у {arm_dir}. Крок ARM пропущено.")
@@ -751,6 +783,8 @@ def run_mkp_check(mkp_dir: Path, dhcp_file: Path, report_file: Path) -> None:
     for row in read_csv_mapped(dhcp_file, "dhcp", ["mac", "ip"]):
         mac = (row.get("mac", "") or "").strip().upper().replace("-", ":")
         dhcp_records[mac] = row
+        if _is_debug_mac(mac):
+            _debug("MKP_CHECK dhcp", mac, row)
 
     # Load existing MACs from the report to avoid duplicates
     existing_macs = set()
@@ -773,34 +807,38 @@ def run_mkp_check(mkp_dir: Path, dhcp_file: Path, report_file: Path) -> None:
                 path, "mkp", ["mac", "model", "owner", "mkp_type"]
             ):
                 mac_raw = (row.get("mac", "") or "").strip()
+                if _is_debug_mac(mac_raw):
+                    _debug("MKP_CHECK raw", mac_raw, {"path": str(path), **row})
                 if not MAC_RE.fullmatch(mac_raw):
                     continue
                 mac = mac_raw.upper().replace("-", ":")
                 if mac in existing_macs:
                     duplicates += 1
+                    if _is_debug_mac(mac):
+                        _debug("MKP_CHECK duplicate", mac, row)
                     continue
                 model = row.get("model", "")
                 owner = row.get("owner", "")
                 mkp_type = row.get("mkp_type", "")
                 dhcp_row = dhcp_records.get(mac)
                 if dhcp_row:
-                    matched_rows.append(
-                        {
-                            "name": f"МКП\n{model}",
-                            "ipmac": f"{dhcp_row.get('ip', '')}\n{mac}",
-                            "owner": owner,
-                            "note": mkp_type,
-                        }
-                    )
+                    out_row = {
+                        "name": f"МКП\n{model}",
+                        "ipmac": f"{dhcp_row.get('ip', '')}\n{mac}",
+                        "owner": owner,
+                        "note": mkp_type,
+                    }
+                    matched_rows.append(out_row)
+                    _debug("MKP_CHECK match", mac, out_row)
                 else:
-                    unmatched_rows.append(
-                        {
-                            "name": f"МКП\n{model}",
-                            "ipmac": mac,
-                            "owner": owner,
-                            "note": mkp_type,
-                        }
-                    )
+                    out_row = {
+                        "name": f"МКП\n{model}",
+                        "ipmac": mac,
+                        "owner": owner,
+                        "note": mkp_type,
+                    }
+                    unmatched_rows.append(out_row)
+                    _debug("MKP_CHECK unmatched", mac, out_row)
                 existing_macs.add(mac)
     else:
         print(f"Відсутні файли для перевірки у {mkp_dir}. Крок МКП пропущено.")
@@ -864,16 +902,21 @@ def run_pending_check(
     rows_to_write = []
     for row in read_csv_mapped(dhcp_file, "dhcp", dhcp_fields):
         mac = (row.get("mac", "") or "").strip().upper()
+        if _is_debug_mac(mac):
+            _debug("PENDING read", mac, row)
         if mac in verified_macs:
+            _debug("PENDING skip verified", mac, row)
             continue
         row_type = classifier.classify(row.get("name", ""))
         record = (row_type,) + tuple(row.get(f, "") for f in dhcp_fields)
         if record in existing:
+            _debug("PENDING duplicate", mac, row)
             continue
         row_to_write = {f: row.get(f, "") for f in dhcp_fields}
         row_to_write["type"] = row_type
         rows_to_write.append(row_to_write)
         existing.add(record)
+        _debug("PENDING append", mac, row_to_write)
 
     file_created = write_csv(pending_file, fieldnames, rows_to_write, append=append)
     action = "Створено" if file_created else "Оновлено"
@@ -906,6 +949,18 @@ def main(argv: list[str] | None = None) -> None:
         clean_interim()
         argv = argv[1:]
 
+    global DEBUG_MAC
+    if "--debug-mac" in argv:
+        idx = argv.index("--debug-mac")
+        try:
+            mac_arg = argv[idx + 1]
+        except IndexError:
+            mac_arg = ""
+        del argv[idx : idx + 2]
+        if mac_arg:
+            DEBUG_MAC = _normalize_mac(mac_arg)
+            print(f"DEBUG mode enabled for MAC {DEBUG_MAC}")
+
     config = load_config()
     paths = config.get("paths", {})
 
@@ -929,7 +984,16 @@ def main(argv: list[str] | None = None) -> None:
         f"Зчитано {before_count} записів DHCP. Відфільтровано {before_count - after_count}. "
         f"Залишилось {after_count}."
     )
+    if DEBUG_MAC:
+        if DEBUG_MAC in ignore_macs:
+            print(f"DEBUG: {DEBUG_MAC} у списку ігнорованих MAC")
+        for r in records:
+            mac = _normalize_mac(r.get("sourcMACAddress", ""))
+            _debug("DHCP raw", mac, r)
     normalized = normalize_dhcp_records(records)
+    if DEBUG_MAC:
+        for r in normalized:
+            _debug("DHCP normalized", r.get("mac", ""), r)
     write_dhcp_interim(interim_file, normalized)
 
     ubiq_dir = BASE_DIR / paths.get("raw_ubiq", "data/raw/ubiq")
@@ -952,7 +1016,7 @@ def main(argv: list[str] | None = None) -> None:
     verified_file = BASE_DIR / "data/interim/verified.csv"
     run_arm_interim(arm_dir, interim_file, verified_file)
     run_mkp_interim(mkp_dir, interim_file, verified_file)
-    append_other_to_verified(other_dir, interim_file, verified_file)
+    append_other_to_verified(other_dir, interim_file, verified_file, DEBUG_MAC)
     report_file2 = BASE_DIR / paths.get(
         "arm_mkp_report", "data/result/120report2.csv"
     )

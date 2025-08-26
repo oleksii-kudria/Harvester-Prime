@@ -23,7 +23,7 @@ def _normalize_mac(value: str) -> str:
 
 
 def append_other_to_verified(
-    other_dir: Path, dhcp_file: Path, verified_file: Path
+    other_dir: Path, dhcp_file: Path, verified_file: Path, debug_mac: str | None = None
 ) -> None:
     """Append devices from ``other_dir`` matched with DHCP data.
 
@@ -46,6 +46,9 @@ def append_other_to_verified(
 
     # Build MAC index from DHCP file
     dhcp_index: Dict[str, Dict[str, str]] = {}
+    def _is_debug(mac: str) -> bool:
+        return debug_mac is not None and _normalize_mac(mac) == debug_mac
+
     try:
         with open(dhcp_file, newline="", encoding="utf-8") as fh:
             reader = csv.DictReader(fh)
@@ -53,6 +56,8 @@ def append_other_to_verified(
                 mac = _normalize_mac(row.get("mac", ""))
                 if mac:
                     dhcp_index[mac] = row
+                    if _is_debug(mac):
+                        print(f"DEBUG [OTHER dhcp] {row}")
     except csv.Error as exc:  # pragma: no cover - unlikely
         print(f"Помилка читання {dhcp_file}: {exc}")
         return
@@ -99,10 +104,14 @@ def append_other_to_verified(
                 reader = csv.DictReader(fh)
                 for row in reader:
                     mac = _normalize_mac(row.get("mac", ""))
+                    if _is_debug(mac):
+                        print(f"DEBUG [OTHER raw] {row}")
                     if not mac:
                         continue
                     dhcp_row = dhcp_index.get(mac)
                     if not dhcp_row:
+                        if _is_debug(mac):
+                            print("DEBUG [OTHER missing DHCP]", row)
                         continue
                     match_count += 1
                     out_row = {
@@ -126,9 +135,13 @@ def append_other_to_verified(
                     )
                     if key in existing_keys:
                         dup_count += 1
+                        if _is_debug(mac):
+                            print("DEBUG [OTHER duplicate]", out_row)
                         continue
                     existing_keys.add(key)
                     new_rows.append(out_row)
+                    if _is_debug(mac):
+                        print("DEBUG [OTHER append]", out_row)
         except csv.Error as exc:
             print(f"Некоректний CSV у {path}: {exc}")
 
