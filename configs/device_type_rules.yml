@@ -99,7 +99,6 @@ rules:
     mode: prefix
     patterns:
       - "Hisense Vision"
-      - "Tv1x"
 
 default: unknown
 options:
