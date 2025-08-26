@@ -93,7 +93,7 @@ rules:
     mode: prefix
     patterns:
       - "Canonfb5ba1"
-      - "EPSON6"
+      - "EPSON"
 
   - type: tv
     mode: prefix
