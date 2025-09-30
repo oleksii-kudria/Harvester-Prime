@@ -70,7 +70,9 @@ def build_verified_rows(
                     f"На пристрої ввімкнено генерацію випадкової MAC-адреси - {randmac_val}"
                 )
             if row.get("mac", "").upper() in randomized_macs:
-                note_parts.append("MAC-адреса рандомна (U/L=1).")
+                note_parts.insert(
+                    1, "На пристрої увімкнена генерація випадкової MAC-адреси."
+                )
 
             note = "\n".join(note_parts)
 
@@ -157,7 +159,9 @@ def build_pending_rows(
                 last_fmt = _format_dt(last)
                 note_parts.append(f"Останнє підключення – {last_fmt}.")
             if row.get("mac", "").upper() in randomized_macs:
-                note_parts.append("MAC-адреса рандомна (U/L=1).")
+                note_parts.insert(
+                    1, "На пристрої увімкнена генерація випадкової MAC-адреси."
+                )
 
             note = "\n".join(note_parts)
             report_rows.append(
