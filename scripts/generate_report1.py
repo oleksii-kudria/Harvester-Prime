@@ -47,7 +47,9 @@ def read_rows(path: Path) -> list[dict[str, str]]:
 
 
 def build_verified_rows(
-    devices: list[tuple[str, str]], rows: list[dict[str, str]]
+    devices: list[tuple[str, str]],
+    rows: list[dict[str, str]],
+    randomized_macs: set[str],
 ) -> list[dict[str, str]]:
     """Create report rows for verified devices ordered by device keys."""
     report_rows: list[dict[str, str]] = []
@@ -67,6 +69,9 @@ def build_verified_rows(
                 note_parts.append(
                     f"На пристрої ввімкнено генерацію випадкової MAC-адреси - {randmac_val}"
                 )
+            if row.get("mac", "").upper() in randomized_macs:
+                note_parts.append("MAC-адреса рандомна (U/L=1).")
+
             note = "\n".join(note_parts)
 
             personal_val = row.get("personal", "").lower()
@@ -122,7 +127,9 @@ def _format_dt(value: str) -> str:
 
 
 def build_pending_rows(
-    devices: list[tuple[str, str]], rows: list[dict[str, str]]
+    devices: list[tuple[str, str]],
+    rows: list[dict[str, str]],
+    randomized_macs: set[str],
 ) -> list[dict[str, str]]:
     """Create report rows for pending devices ordered by device keys."""
     report_rows: list[dict[str, str]] = []
@@ -149,6 +156,9 @@ def build_pending_rows(
             elif not first and last:
                 last_fmt = _format_dt(last)
                 note_parts.append(f"Останнє підключення – {last_fmt}.")
+            if row.get("mac", "").upper() in randomized_macs:
+                note_parts.append("MAC-адреса рандомна (U/L=1).")
+
             note = "\n".join(note_parts)
             report_rows.append(
                 {
@@ -201,6 +211,15 @@ def main() -> None:
     devices = load_device_mapping()
     verified_path = BASE_DIR / "data" / "interim" / "verified.csv"
     pending_path = BASE_DIR / "data" / "interim" / "pending.csv"
+    dhcp_path = BASE_DIR / "data" / "interim" / "dhcp.csv"
+
+    randomized_macs: set[str] = set()
+    if dhcp_path.exists():
+        for row in read_rows(dhcp_path):
+            mac = row.get("mac", "").upper()
+            randomized = row.get("randomized", "").strip().lower()
+            if mac and randomized == "true":
+                randomized_macs.add(mac)
 
     if verified_path.exists():
         verified_rows = read_rows(verified_path)
@@ -214,8 +233,8 @@ def main() -> None:
         print(f"Файл {pending_path} не знайдено")
         pending_rows = []
 
-    report_rows = build_verified_rows(devices, verified_rows)
-    report_rows.extend(build_pending_rows(devices, pending_rows))
+    report_rows = build_verified_rows(devices, verified_rows, randomized_macs)
+    report_rows.extend(build_pending_rows(devices, pending_rows, randomized_macs))
     report_path = BASE_DIR / "data" / "interim" / "report1.csv"
     added = write_report(report_rows, report_path)
     print(f"Створено файл {report_path}")
