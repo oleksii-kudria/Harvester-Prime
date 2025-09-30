@@ -33,7 +33,7 @@ from app.collectors.files import (
     read_csv,
     write_csv,
 )
-from app.processors.normalize import normalize_dhcp_records
+from app.processors.normalize import normalize_dhcp_records, is_randomized_mac
 from app.processors.verified import append_other_to_verified
 
 
@@ -53,6 +53,12 @@ def load_schemas() -> dict:
 
 
 SCHEMAS = load_schemas()
+
+
+def _normalize_schema_key(value: str) -> str:
+    """Return a case-insensitive key without non-word characters."""
+
+    return re.sub(r"\W", "", (value or "").lower())
 
 
 def rename_hostname_column(path: Path) -> None:
@@ -88,11 +94,28 @@ def read_csv_mapped(path: Path, schema_key: str, columns: list[str]) -> list[dic
     if schema_key in {"dhcp", "pending"}:
         rename_hostname_column(path)
     mapping = SCHEMAS.get(schema_key, {})
-    actual_columns = [mapping.get(col, col) for col in columns]
-    rows = read_csv(path, columns=actual_columns)
+    rows = read_csv(path, columns=None)
     remapped = []
     for row in rows:
-        remapped.append({col: row.get(mapping.get(col, col), "") for col in columns})
+        normalised_row = {_normalize_schema_key(k): v for k, v in row.items()}
+        remapped_row: dict[str, str] = {}
+        for col in columns:
+            actual_values = mapping.get(col, col)
+            if not isinstance(actual_values, (list, tuple, set)):
+                actual_values = [actual_values]
+            value = ""
+            for actual in actual_values:
+                if actual in row:
+                    value = row.get(actual, "")
+                    if value is None:
+                        value = ""
+                    break
+                key = _normalize_schema_key(str(actual))
+                if key in normalised_row:
+                    value = normalised_row[key]
+                    break
+            remapped_row[col] = value
+        remapped.append(remapped_row)
     return remapped
 
 
@@ -364,6 +387,8 @@ def run_ubiq_interim(
                     "name": _normalize_name(row.get("name", ""), mac),
                     "firstDate": "",
                     "lastDate": _parse_last_date(row.get("date", ""), ip),
+                    "count": "",
+                    "randomized": "true" if is_randomized_mac(mac) else "false",
                 }
             )
 

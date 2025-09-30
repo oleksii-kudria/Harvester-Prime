@@ -31,6 +31,8 @@ def test_run_ubiq_interim(tmp_path):
             "name": "unknown",
             "firstDate": "",
             "lastDate": "",
+            "count": "",
+            "randomized": "true",
         },
         {
             "source": "192.168.55.1",
@@ -39,5 +41,7 @@ def test_run_ubiq_interim(tmp_path):
             "name": "A36-phone",
             "firstDate": "",
             "lastDate": "1755492240",
+            "count": "",
+            "randomized": "false",
         },
     ]

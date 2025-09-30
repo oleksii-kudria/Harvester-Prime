@@ -29,8 +29,8 @@ def test_rarm_and_idempotent(tmp_path: Path) -> None:
     )
 
     dhcp_file.write_text(
-        "source,ip,mac,firstDate,lastDate\n"
-        "s1,10.0.0.1,B1:67:2D:F4:CA:49,1,2\n",
+        "source,ip,mac,firstDate,lastDate,count,randomized\n"
+        "s1,10.0.0.1,B1:67:2D:F4:CA:49,1,2,1,false\n",
         encoding="utf-8",
     )
 
@@ -63,8 +63,8 @@ def test_rmkp_and_idempotent(tmp_path: Path) -> None:
     )
 
     dhcp_file.write_text(
-        "source,ip,mac,firstDate,lastDate\n"
-        "s1,10.0.0.2,DE:E4:16:AC:71:FE,3,4\n",
+        "source,ip,mac,firstDate,lastDate,count,randomized\n"
+        "s1,10.0.0.2,DE:E4:16:AC:71:FE,3,4,1,true\n",
         encoding="utf-8",
     )
 

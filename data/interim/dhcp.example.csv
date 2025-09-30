@@ -1,2 +1,2 @@
-source,ip,mac,name,firstDate,lastDate
-10.0.0.10,192.168.0.10,AA:BB:CC:DD:EE:FF,Device1,1754562443848,1754562532771
+source,ip,mac,name,firstDate,lastDate,count,randomized
+10.0.0.10,192.168.0.10,AA:BB:CC:DD:EE:FF,Device1,1754562443848,1754562532771,1,true

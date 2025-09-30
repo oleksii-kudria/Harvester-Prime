@@ -1,23 +1,44 @@
 arm:
-  # mac: "MAC"
-  # mac: "staticMac"
-  mac: "staticMac"
-  hostname: "hostname"
-  # owner: "owner"
-  owner: "owner"
-  pc_type: "pcType"
-  # pc_type: "Тип ПК"
-  ip: "ip"
-  # randmac: "randomMac"
-  randmac: "randomMac"
-  ownership: "pcOwning"
+  mac:
+    - "staticMac"
+    - "Static MAC"
+  hostname:
+    - "hostname"
+    - "Hostname"
+  owner:
+    - "owner"
+    - "Власник"
+  pc_type:
+    - "pcType"
+    - "Тип ПК"
+  ip:
+    - "ip"
+    - "IP"
+  randmac:
+    - "randomMac"
+    - "Random MAC"
+  ownership:
+    - "pcOwning"
+    - "Власність"
 mkp:
-  mac: "staticMac"
-  model: "model"
-  owner: "responsible"
-  mkp_type: "phoneType"
-  randmac: "randomMac"
-  category: "phoneCategory"
+  mac:
+    - "staticMac"
+    - "Статичний MAC"
+  model:
+    - "model"
+    - "Модель"
+  owner:
+    - "responsible"
+    - "Відповідальний"
+  mkp_type:
+    - "phoneType"
+    - "Тип МКП"
+  randmac:
+    - "randomMac"
+    - "Динамічний MAC"
+  category:
+    - "phoneCategory"
+    - "Категорія МКП"
 dhcp:
   mac: "mac"
   name: "name"
@@ -25,6 +46,8 @@ dhcp:
   firstDate: "firstDate"
   lastDate: "lastDate"
   source: "source"
+  count: "count"
+  randomized: "randomized"
 validation:
   ip: "ip"
   mac: "mac"

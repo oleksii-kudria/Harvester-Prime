@@ -67,7 +67,16 @@ def write_dhcp_interim(path: Path, rows: Iterable[Dict[str, str]]) -> None:
     """
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    fieldnames = ["source", "ip", "mac", "name", "firstDate", "lastDate"]
+    fieldnames = [
+        "source",
+        "ip",
+        "mac",
+        "name",
+        "firstDate",
+        "lastDate",
+        "count",
+        "randomized",
+    ]
 
     # Load existing records to avoid writing duplicates
     existing: Set[Tuple[str, ...]] = set()
@@ -103,6 +112,8 @@ def write_dhcp_interim(path: Path, rows: Iterable[Dict[str, str]]) -> None:
                 "name": row.get("name", row.get("hostname", "")),
                 "firstDate": row.get("firstDate", ""),
                 "lastDate": row.get("lastDate", ""),
+                "count": row.get("count", ""),
+                "randomized": row.get("randomized", ""),
             }
             record = tuple(normalized.get(f, "") for f in fieldnames)
             if record in existing:

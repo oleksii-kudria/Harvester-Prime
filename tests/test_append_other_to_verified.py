@@ -28,8 +28,8 @@ def test_append_and_idempotent(tmp_path: Path) -> None:
     )
 
     dhcp_file.write_text(
-        "source,ip,mac,firstDate,lastDate\n"
-        "s1,10.0.0.1,AA:BB:CC:DD:EE:FF,1,2\n",
+        "source,ip,mac,firstDate,lastDate,count,randomized\n"
+        "s1,10.0.0.1,AA:BB:CC:DD:EE:FF,1,2,1,false\n",
         encoding="utf-8",
     )
 
