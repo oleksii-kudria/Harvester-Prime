@@ -7,6 +7,7 @@ from datetime import datetime
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+EXCLUDED_RANDOMIZED_TYPES = {"rarm", "rmkp"}
 
 
 def load_device_mapping() -> list[tuple[str, str]]:
@@ -69,7 +70,10 @@ def build_verified_rows(
                 note_parts.append(
                     f"На пристрої ввімкнено генерацію випадкової MAC-адреси - {randmac_val}"
                 )
-            if row.get("mac", "").upper() in randomized_macs:
+            if (
+                row.get("mac", "").upper() in randomized_macs
+                and key not in EXCLUDED_RANDOMIZED_TYPES
+            ):
                 note_parts.insert(
                     1, "На пристрої увімкнена генерація випадкової MAC-адреси."
                 )
@@ -158,7 +162,10 @@ def build_pending_rows(
             elif not first and last:
                 last_fmt = _format_dt(last)
                 note_parts.append(f"Останнє підключення – {last_fmt}.")
-            if row.get("mac", "").upper() in randomized_macs:
+            if (
+                row.get("mac", "").upper() in randomized_macs
+                and key not in EXCLUDED_RANDOMIZED_TYPES
+            ):
                 note_parts.insert(
                     1, "На пристрої увімкнена генерація випадкової MAC-адреси."
                 )
