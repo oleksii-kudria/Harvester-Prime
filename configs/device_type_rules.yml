@@ -4,9 +4,12 @@ rules:
     patterns:
       - "Acer-Nitro-"
       - "Blanket-"
+      - "bm30n1"
+      - "BM0BN3"
       - "DESKTOP-"
       - "DESKTOP_"
       - "HPEliteBook"
+      - "KOMPUKTER"
       - "LAPTOP-"
       - "LAPTOP_"
       - "Mac"
@@ -15,37 +18,53 @@ rules:
       - "WIN_"
       - "WINDOWS-"
       - "WINDOWS_"
+      - "Work-PC"
 
   - type: arm
     mode: contains
     patterns:
+      - "ASUS_TUF"
       - "TUF-Gaming"
       - "-Komp"
 
   - type: mkp
     mode: prefix
     patterns:
+      - "A13-"
+      - "A15-"
+      - "A22-"
       - "A24-"
+      - "A25-"
+      - "A35-"
       - "A36-"
       - "A51-"
       - "A52-"
       - "A53-"
       - "A54-"
+      - "A55-"
       - "Apple iPad"
       - "Apple iPhone"
       - "Galaxy-"
-      - "HUAWEI_P_smart-"
+      - "HUAWEI_P"
+      - "HUAWEI_Y"
       - "iPhone"
       - "Lenovo Tab"
+      - "M31s-"
+      - "M33-"
       - "M52-"
       - "moto-"
+      - "motorola"
       - "Motorola Moto"
+      - "NP03J"
+      - "One-Plus"
       - "OnePlus-"
       - "OPPO-"
       - "Pixel-"
       - "POCO-"
       - "Realme-"
       - "Redmi-"
+      - "Redmi5"
+      - "ROG-Phone6"
       - "S10-"
       - "S20-"
       - "S21-"
@@ -56,16 +75,23 @@ rules:
       - "SM73GA5G"
       - "Tab-"
       - "TB330FU"
+      - "TB370FU"
       - "Xiaomi-"
+      - "ZTE-80"
 
   - type: mkp
     mode: contains
     patterns:
+      - "-Tab-S9"
+      - "21061119DG"
       - "21081111RG"
+      - "M2006C3LG"
       - "M2102J20SG"
       - "Redmi9T"
       - "RedmiNote"
+      - "Phone-7"
       - "Tab-S7"
+      - "XQ-DQ72"
 
   - type: router
     mode: regex
@@ -79,13 +105,18 @@ rules:
       - "Archer_C20"
       - "ArcherA64"
       - "ArcherAX10"
+      - "ArcherAX12"
       - "ArcherAX72"
       - "Keenetic-"
       - "MikroTik"
+      - "MiWiFi-"
+      - "MW301R"
+      - "TL-WR840N"
 
   - type: watch
     mode: contains
     patterns:
+      - "garmin"
       - "Smartwatch"
       - "Watch"
 
@@ -99,6 +130,21 @@ rules:
     mode: prefix
     patterns:
       - "Hisense Vision"
+
+  - type: ecoflow
+    mode: prefix
+    patterns:
+      - "ecoflow"
+
+  - type: game
+    mode: prefix
+    patterns:
+      - "Nintendo"
+
+  - type: apoint
+    mode: prefix
+    patterns:
+      - "CAP_"
 
 default: unknown
 options:
