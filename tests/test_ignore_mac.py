@@ -39,3 +39,5 @@ def test_ignore_mac(tmp_path, monkeypatch):
         rows = list(csv.DictReader(fh))
 
     assert [row["mac"] for row in rows] == ["11:22:33:44:55:66"]
+    assert rows[0]["count"] == "1"
+    assert rows[0]["randomized"] == "false"

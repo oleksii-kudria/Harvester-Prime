@@ -6,7 +6,8 @@ Utilities for processing DHCP log files.
 
 * Collect DHCP log entries from CSV files in a directory.
 * Normalize records into a consistent structure.
-* Track the first and last times each MAC address appears in the logs.
+* Track how often each MAC address appears and the first/last timestamps.
+* Identify whether a MAC address is randomized (locally administered).
 * Write results to an interim CSV file while skipping duplicate rows.
 
 ## Input
@@ -17,7 +18,8 @@ Raw DHCP log CSV files. Locations are configurable via `configs/base.yaml` (defa
 
 A normalized CSV file containing unique DHCP records (default: `data/interim/dhcp.csv`).
 Each record includes the earliest (`firstDate`) and latest (`lastDate`) timestamps for
-when the MAC address was seen.
+when the MAC address was seen, how many times it appeared (`count`), and whether the
+MAC address is randomized (`randomized`).
 
 ## Usage
 
@@ -101,7 +103,7 @@ contain the listed columns. Columns are read as text unless noted otherwise.
 The processing steps produce these CSV files:
 
 - `data/interim/dhcp.csv` – columns: `source`, `ip`, `mac`, `name`,
-  `firstDate`, `lastDate`.
+  `firstDate`, `lastDate`, `count`, `randomized`.
 - `data/interim/verified.csv` – columns: `type`, `source`, `name`, `ip`,
   `mac`, `randmac`, `owner`, `note`, `firstDate`, `lastDate`, `personal`.
 - `data/interim/pending.csv` – columns: `type`, `source`, `ip`, `mac`,
