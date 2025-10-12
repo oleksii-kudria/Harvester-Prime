@@ -10,6 +10,7 @@ rules:
       - "DESKTOP_"
       - "HPEliteBook"
       - "KOMPUKTER"
+      - "KOMPUTER"
       - "LAPTOP-"
       - "LAPTOP_"
       - "Mac"
@@ -26,10 +27,12 @@ rules:
       - "ASUS_TUF"
       - "TUF-Gaming"
       - "-Komp"
+      - "-FUJITSU"
 
   - type: mkp
     mode: prefix
     patterns:
+      - "A05-"
       - "A13-"
       - "A15-"
       - "A22-"
@@ -50,6 +53,7 @@ rules:
       - "iPhone"
       - "Lenovo Tab"
       - "M31s-"
+      - "M32-"
       - "M33-"
       - "M52-"
       - "moto-"
@@ -66,6 +70,7 @@ rules:
       - "Redmi5"
       - "ROG-Phone6"
       - "S10-"
+      - "S10e-"
       - "S20-"
       - "S21-"
       - "S22-"
@@ -86,6 +91,8 @@ rules:
       - "21061119DG"
       - "21081111RG"
       - "M2006C3LG"
+      - "M2101K7BNY"
+      - "M2003J15SC"
       - "M2102J20SG"
       - "Redmi9T"
       - "RedmiNote"
@@ -101,8 +108,10 @@ rules:
   - type: router
     mode: contains
     patterns:
+      - "AC12G"
       - "Archer_C6"
       - "Archer_C20"
+      - "Archer_A64"
       - "ArcherA64"
       - "ArcherAX10"
       - "ArcherAX12"
@@ -116,6 +125,7 @@ rules:
   - type: watch
     mode: contains
     patterns:
+      - "AppleWach"
       - "garmin"
       - "Smartwatch"
       - "Watch"
@@ -123,8 +133,9 @@ rules:
   - type: printer
     mode: prefix
     patterns:
-      - "Canonfb5ba1"
+      - "Canon"
       - "EPSON"
+      - "XRX"
 
   - type: tv
     mode: prefix
