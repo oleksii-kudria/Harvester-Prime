@@ -36,6 +36,54 @@ def load_device_mapping() -> list[tuple[str, str]]:
     return devices
 
 
+def load_informsystem_mapping() -> dict[str, str]:
+    """Return mapping from note values to information system names."""
+
+    mapping: dict[str, str] = {}
+    config_path: Path | None = None
+    for filename in ("local.yaml", "local.yml"):
+        path = BASE_DIR / "configs" / filename
+        if path.exists():
+            config_path = path
+            break
+
+    if config_path is None:
+        return mapping
+
+    in_apps = False
+    current_source: str | None = None
+    with open(config_path, encoding="utf-8") as fh:
+        for line in fh:
+            stripped = line.rstrip("\n")
+            if not in_apps:
+                if stripped.strip() == "apps:":
+                    in_apps = True
+                continue
+
+            if not stripped.strip():
+                continue
+
+            if not stripped.startswith("  "):
+                if in_apps:
+                    break
+                continue
+
+            if stripped.startswith("    "):
+                key, _, raw_value = stripped.strip().partition(":")
+                value = raw_value.strip().strip('"\'')
+                if key == "source":
+                    current_source = value
+                elif key == "target" and current_source is not None:
+                    mapping[current_source.lower()] = value
+                    if value:
+                        mapping[value.lower()] = value
+            else:
+                current_source = None
+                continue
+
+    return mapping
+
+
 def read_rows(path: Path) -> list[dict[str, str]]:
     """Read CSV ensuring all fields are strings."""
     rows: list[dict[str, str]] = []
@@ -52,6 +100,7 @@ def build_verified_rows(
     devices: list[tuple[str, str]],
     rows: list[dict[str, str]],
     randomized_macs: set[str],
+    informsystem_mapping: dict[str, str],
 ) -> list[dict[str, str]]:
     """Create report rows for verified devices ordered by device keys."""
     report_rows: list[dict[str, str]] = []
@@ -61,8 +110,12 @@ def build_verified_rows(
                 continue
             name_parts = [display_name, row.get("name", "")]
             note_val = row.get("note", "")
-            if note_val:
-                name_parts.append(note_val)
+            informsystem, remaining_note = _extract_informsystem(
+                note_val, informsystem_mapping
+            )
+            if remaining_note:
+                name_parts.append(remaining_note)
+            informsystem_value = informsystem or "none"
             name = "\n".join(name_parts)
             ipmac = f"{row.get('ip', '')}\n{row.get('mac', '')}"
             if key in SPECIAL_NOTE_TYPES:
@@ -126,6 +179,7 @@ def build_verified_rows(
                     "firstConnectEpoch": first_epoch,
                     "lastConnectEpoch": last_epoch,
                     "ownership": ownership,
+                    "informsystem": informsystem_value,
                 }
             )
     return report_rows
@@ -227,9 +281,50 @@ def build_pending_rows(
                     "firstConnectEpoch": first_epoch if first else "",
                     "lastConnectEpoch": last_epoch if last else "",
                     "ownership": "none",
+                    "informsystem": "none",
                 }
             )
     return report_rows
+
+
+def _extract_informsystem(
+    note: str, mapping: dict[str, str]
+) -> tuple[str, str]:
+    """Return informsystem value and remaining note for *note* using *mapping*."""
+
+    note = note or ""
+    normalized = note.replace("\r\n", "\n").replace("\r", "\n")
+    parts = [part.strip() for part in normalized.split("\n") if part.strip()]
+
+    if not parts:
+        return "", ""
+
+    matched_values: list[str] = []
+    matched_keys: set[str] = set()
+    unmatched_parts: list[str] = []
+    matched_any = False
+
+    for part in parts:
+        key = part.lower()
+        target = mapping.get(key)
+        if target is not None:
+            matched_any = True
+            target = target.strip()
+            if target:
+                normalized_target = target
+                target_key = normalized_target.lower()
+                if target_key not in matched_keys:
+                    matched_keys.add(target_key)
+                    matched_values.append(normalized_target)
+        else:
+            unmatched_parts.append(part)
+
+    if not matched_any:
+        return "", note
+
+    remaining_note = "\n".join(unmatched_parts)
+    informsystem_value = "\n".join(matched_values)
+    return informsystem_value, remaining_note
 
 
 def write_report(rows: list[dict[str, str]], path: Path) -> int:
@@ -243,6 +338,7 @@ def write_report(rows: list[dict[str, str]], path: Path) -> int:
         "source",
         "verified",
         "ownership",
+        "informsystem",
         "type",
         "name",
         "ipmac",
@@ -313,7 +409,10 @@ def main() -> None:
         print(f"Файл {pending_path} не знайдено")
         pending_rows = []
 
-    report_rows = build_verified_rows(devices, verified_rows, randomized_macs)
+    informsystem_mapping = load_informsystem_mapping()
+    report_rows = build_verified_rows(
+        devices, verified_rows, randomized_macs, informsystem_mapping
+    )
     report_rows.extend(build_pending_rows(devices, pending_rows, randomized_macs))
     report_path = BASE_DIR / "data" / "result" / "report1.csv"
     added = write_report(report_rows, report_path)
