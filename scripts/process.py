@@ -920,8 +920,9 @@ def clean_interim(directory: Path | None = None) -> None:
 def main(argv: list[str] | None = None) -> None:
     argv = list(argv or sys.argv[1:])
     if argv and argv[0] == "clean":
-        clean_interim()
         argv = argv[1:]
+
+    clean_interim()
 
     config = load_config()
     paths = config.get("paths", {})
@@ -977,6 +978,13 @@ def main(argv: list[str] | None = None) -> None:
     run_mkp_check(mkp_dir, interim_file, report_file2)
     pending_file = BASE_DIR / "data/interim/pending.csv"
     run_pending_check(interim_file, verified_file, pending_file)
+
+    try:
+        from scripts import generate_report1
+    except Exception as exc:  # pragma: no cover - defensive logging
+        print(f"Не вдалося згенерувати звіт: {exc}")
+    else:
+        generate_report1.main()
 
 
 if __name__ == "__main__":

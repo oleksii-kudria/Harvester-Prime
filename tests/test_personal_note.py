@@ -27,7 +27,7 @@ def test_personal_suffix_in_note(tmp_path, monkeypatch):
     monkeypatch.setattr(gr, "BASE_DIR", base_dir)
     gr.main()
 
-    report_path = base_dir / "data" / "interim" / "report1.csv"
+    report_path = base_dir / "data" / "result" / "report1.csv"
     with open(report_path, encoding="utf-8") as fh:
         rows = list(csv.DictReader(fh))
 
