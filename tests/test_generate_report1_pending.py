@@ -42,6 +42,7 @@ def test_generate_report1_includes_pending(tmp_path, monkeypatch):
         rows = list(csv.DictReader(fh))
 
     assert len(rows) == 2
+    verified = rows[0]
     pending = rows[1]
     assert pending["verified"] == "false"
     assert pending["type"] == "arm"
@@ -51,6 +52,14 @@ def test_generate_report1_includes_pending(tmp_path, monkeypatch):
         pending["note"]
         == "Не надано для перевірки.\nПерше підключення – 02.01.2024 03:04, останнє підключення – 03.02.2024 04:05."
     )
+    assert verified["firstConnect"] == ""
+    assert verified["lastConnect"] == ""
+    assert verified["firstConnectEpoch"] == ""
+    assert verified["lastConnectEpoch"] == ""
+    assert pending["firstConnect"] == "02.01.2024 03:04"
+    assert pending["lastConnect"] == "03.02.2024 04:05"
+    assert pending["firstConnectEpoch"] == "1704164640"
+    assert pending["lastConnectEpoch"] == "1706933100"
 
 
 def test_generate_report1_handles_epoch_times(tmp_path, monkeypatch):
@@ -94,6 +103,10 @@ def test_generate_report1_handles_epoch_times(tmp_path, monkeypatch):
         "Не надано для перевірки.\n"
         "Перше підключення – 02.01.2024 03:04, останнє підключення – 03.02.2024 04:05."
     )
+    assert pending["firstConnect"] == "02.01.2024 03:04"
+    assert pending["lastConnect"] == "03.02.2024 04:05"
+    assert pending["firstConnectEpoch"] == "1704164640"
+    assert pending["lastConnectEpoch"] == "1706933100"
 
 
 def test_generate_report1_handles_last_date_only(tmp_path, monkeypatch):
@@ -135,6 +148,10 @@ def test_generate_report1_handles_last_date_only(tmp_path, monkeypatch):
         pending["note"]
         == "Не надано для перевірки.\nОстаннє підключення – 03.02.2024 04:05."
     )
+    assert pending["firstConnect"] == ""
+    assert pending["lastConnect"] == "03.02.2024 04:05"
+    assert pending["firstConnectEpoch"] == ""
+    assert pending["lastConnectEpoch"] == "1706933100"
 
 
 def test_generate_report1_includes_randomized_note(tmp_path, monkeypatch):
@@ -191,4 +208,12 @@ def test_generate_report1_includes_randomized_note(tmp_path, monkeypatch):
         "На пристрої увімкнена генерація випадкової MAC-адреси.\n"
         "Перше підключення – 02.01.2024 03:04, останнє підключення – 03.02.2024 04:05."
     )
+    assert verified["firstConnect"] == ""
+    assert verified["lastConnect"] == ""
+    assert verified["firstConnectEpoch"] == ""
+    assert verified["lastConnectEpoch"] == ""
+    assert pending["firstConnect"] == "02.01.2024 03:04"
+    assert pending["lastConnect"] == "03.02.2024 04:05"
+    assert pending["firstConnectEpoch"] == "1704164640"
+    assert pending["lastConnectEpoch"] == "1706933100"
 
