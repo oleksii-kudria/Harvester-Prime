@@ -19,6 +19,7 @@ paths:
 devices:
   router: "Маршрутизатор"
   apoint: "Точка доступу"
+  switch: "Комутатор"
   arm: "АРМ"
   mkp: "МКП"
   rarm: "АРМ (randome mac)"

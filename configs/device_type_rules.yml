@@ -33,11 +33,16 @@ rules:
     mode: prefix
     patterns:
       - "A05-"
+      - "A12-"
       - "A13-"
+      - "A14-"
       - "A15-"
       - "A22-"
+      - "A23-"
       - "A24-"
       - "A25-"
+      - "A26-"
+      - "A32-"
       - "A35-"
       - "A36-"
       - "A51-"
@@ -45,20 +50,26 @@ rules:
       - "A53-"
       - "A54-"
       - "A55-"
+      - "A56-"
       - "Apple iPad"
       - "Apple iPhone"
       - "Galaxy-"
-      - "HUAWEI_P"
-      - "HUAWEI_Y"
+      - "HUAWEI_"
       - "iPhone"
+      - "iHunt-"
       - "Lenovo Tab"
+      - "Lenovo-Legion-Tab-"
+      - "M14-"
       - "M31s-"
       - "M32-"
       - "M33-"
+      - "M35-"
       - "M52-"
+      - "M53"
       - "moto-"
       - "motorola"
       - "Motorola Moto"
+      - "nokia"
       - "NP03J"
       - "One-Plus"
       - "OnePlus-"
@@ -83,6 +94,7 @@ rules:
       - "TB370FU"
       - "Xiaomi-"
       - "ZTE-80"
+      - "Z2353"
 
   - type: mkp
     mode: contains
@@ -93,11 +105,15 @@ rules:
       - "M2006C3LG"
       - "M2101K7BNY"
       - "M2003J15SC"
+      - "M2004J19C"
       - "M2102J20SG"
+      - "M2101K6G"
+      - "M2010J19CG"
       - "Redmi9T"
       - "RedmiNote"
       - "Phone-7"
       - "Tab-S7"
+      - "TabA8"
       - "XQ-DQ72"
 
   - type: router
@@ -109,23 +125,18 @@ rules:
     mode: contains
     patterns:
       - "AC12G"
-      - "Archer_C6"
-      - "Archer_C20"
-      - "Archer_A64"
-      - "ArcherA64"
-      - "ArcherAX10"
-      - "ArcherAX12"
-      - "ArcherAX72"
+      - "Archer"
       - "Keenetic-"
       - "MikroTik"
       - "MiWiFi-"
       - "MW301R"
+      - "OpenWrt"
       - "TL-WR840N"
 
   - type: watch
     mode: contains
     patterns:
-      - "AppleWach"
+      - "AppleWa"
       - "garmin"
       - "Smartwatch"
       - "Watch"
@@ -141,6 +152,7 @@ rules:
     mode: prefix
     patterns:
       - "Hisense Vision"
+      - "TOSHIBA-TV"
 
   - type: ecoflow
     mode: prefix
