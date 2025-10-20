@@ -37,7 +37,7 @@ def test_generate_report1_includes_pending(tmp_path, monkeypatch):
     monkeypatch.setattr(gr, "BASE_DIR", base_dir)
     gr.main()
 
-    report_path = base_dir / "data" / "interim" / "report1.csv"
+    report_path = base_dir / "data" / "result" / "report1.csv"
     with open(report_path, encoding="utf-8") as fh:
         rows = list(csv.DictReader(fh))
 
@@ -84,7 +84,7 @@ def test_generate_report1_handles_epoch_times(tmp_path, monkeypatch):
     monkeypatch.setattr(gr, "BASE_DIR", base_dir)
     gr.main()
 
-    report_path = base_dir / "data" / "interim" / "report1.csv"
+    report_path = base_dir / "data" / "result" / "report1.csv"
     with open(report_path, encoding="utf-8") as fh:
         rows = list(csv.DictReader(fh))
 
@@ -125,7 +125,7 @@ def test_generate_report1_handles_last_date_only(tmp_path, monkeypatch):
     monkeypatch.setattr(gr, "BASE_DIR", base_dir)
     gr.main()
 
-    report_path = base_dir / "data" / "interim" / "report1.csv"
+    report_path = base_dir / "data" / "result" / "report1.csv"
     with open(report_path, encoding="utf-8") as fh:
         rows = list(csv.DictReader(fh))
 
@@ -173,7 +173,7 @@ def test_generate_report1_includes_randomized_note(tmp_path, monkeypatch):
     monkeypatch.setattr(gr, "BASE_DIR", base_dir)
     gr.main()
 
-    report_path = base_dir / "data" / "interim" / "report1.csv"
+    report_path = base_dir / "data" / "result" / "report1.csv"
     with open(report_path, encoding="utf-8") as fh:
         rows = list(csv.DictReader(fh))
 
@@ -183,12 +183,12 @@ def test_generate_report1_includes_randomized_note(tmp_path, monkeypatch):
 
     assert (
         verified["note"]
-        == "Надано на перевірку.\nMAC-адреса рандомна (U/L=1)."
+        == "Надано на перевірку.\nНа пристрої увімкнена генерація випадкової MAC-адреси."
     )
     assert (
         pending["note"]
         == "Не надано для перевірки.\n"
-        "Перше підключення – 02.01.2024 03:04, останнє підключення – 03.02.2024 04:05.\n"
-        "MAC-адреса рандомна (U/L=1)."
+        "На пристрої увімкнена генерація випадкової MAC-адреси.\n"
+        "Перше підключення – 02.01.2024 03:04, останнє підключення – 03.02.2024 04:05."
     )
 

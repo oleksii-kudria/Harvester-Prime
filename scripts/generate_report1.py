@@ -246,7 +246,7 @@ def main() -> None:
 
     report_rows = build_verified_rows(devices, verified_rows, randomized_macs)
     report_rows.extend(build_pending_rows(devices, pending_rows, randomized_macs))
-    report_path = BASE_DIR / "data" / "interim" / "report1.csv"
+    report_path = BASE_DIR / "data" / "result" / "report1.csv"
     added = write_report(report_rows, report_path)
     print(f"Створено файл {report_path}")
     print(f"Додано {added} записів")
