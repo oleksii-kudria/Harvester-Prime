@@ -327,11 +327,14 @@ def _extract_informsystem(
     return informsystem_value, remaining_note
 
 
-def write_report(rows: list[dict[str, str]], path: Path) -> int:
-    """Write rows to CSV at *path* with required columns.
+def write_report(rows: list[dict[str, str]], path: Path) -> tuple[int, int]:
+    """Write *rows* to CSV at *path* and track informsystem changes.
 
-    Returns the number of newly written rows. Rows that already exist in the
-    target file are skipped.
+    Returns a tuple ``(written_rows, informsystem_updates)`` where
+    ``written_rows`` is the number of rows written to the file and
+    ``informsystem_updates`` is the number of rows where the ``informsystem``
+    value was updated or newly populated with a meaningful value (i.e. not
+    ``"none"``).
     """
 
     fieldnames = [
@@ -348,39 +351,53 @@ def write_report(rows: list[dict[str, str]], path: Path) -> int:
         "firstConnectEpoch",
         "lastConnectEpoch",
     ]
+    identifier_fields = ["source", "type", "name", "ipmac"]
+
     path.parent.mkdir(parents=True, exist_ok=True)
 
-    existing: set[tuple[str, ...]] = set()
     existing_rows: list[dict[str, str]] = []
-    file_exists = path.exists()
-    rewrite_required = False
-    if file_exists:
+    existing_lookup: dict[tuple[str, ...], dict[str, str]] = {}
+    if path.exists():
         with open(path, newline="", encoding="utf-8") as fh:
             reader = csv.DictReader(fh)
             existing_rows = list(reader)
-            header_fields = reader.fieldnames or []
-            rewrite_required = any(field not in header_fields for field in fieldnames)
-            for row in existing_rows:
-                existing.add(tuple(row.get(field, "") for field in fieldnames))
+        for row in existing_rows:
+            key = tuple(row.get(field, "") for field in identifier_fields)
+            existing_lookup[key] = row
 
-    mode = "a" if file_exists and not rewrite_required else "w"
-    added = 0
-    with open(path, mode, newline="", encoding="utf-8") as fh:
+    def _normalize_informsystem(value: str) -> str:
+        return (value or "").strip()
+
+    def _has_meaningful_informsystem(value: str) -> bool:
+        normalized = _normalize_informsystem(value).lower()
+        return bool(normalized) and normalized != "none"
+
+    informsystem_updates = 0
+    for row in rows:
+        key = tuple(row.get(field, "") for field in identifier_fields)
+        existing_row = existing_lookup.get(key)
+        new_value = row.get("informsystem", "")
+        if existing_row is None:
+            if _has_meaningful_informsystem(new_value):
+                informsystem_updates += 1
+            continue
+
+        existing_value = existing_row.get("informsystem", "")
+        existing_meaningful = _has_meaningful_informsystem(existing_value)
+        new_meaningful = _has_meaningful_informsystem(new_value)
+        if existing_meaningful != new_meaningful:
+            informsystem_updates += 1
+        elif new_meaningful and _normalize_informsystem(existing_value) != _normalize_informsystem(new_value):
+            informsystem_updates += 1
+
+    with open(path, "w", newline="", encoding="utf-8") as fh:
         writer = csv.DictWriter(fh, fieldnames=fieldnames)
-        if not file_exists or rewrite_required:
-            writer.writeheader()
-            if rewrite_required:
-                for row in existing_rows:
-                    normalized = {field: row.get(field, "") for field in fieldnames}
-                    writer.writerow(normalized)
+        writer.writeheader()
         for row in rows:
-            key = tuple(row.get(field, "") for field in fieldnames)
-            if key in existing:
-                continue
-            writer.writerow(row)
-            existing.add(key)
-            added += 1
-    return added
+            normalized = {field: row.get(field, "") for field in fieldnames}
+            writer.writerow(normalized)
+
+    return len(rows), informsystem_updates
 
 
 def main() -> None:
@@ -415,9 +432,13 @@ def main() -> None:
     )
     report_rows.extend(build_pending_rows(devices, pending_rows, randomized_macs))
     report_path = BASE_DIR / "data" / "result" / "report1.csv"
-    added = write_report(report_rows, report_path)
+    written, informsystem_updates = write_report(report_rows, report_path)
     print(f"Створено файл {report_path}")
-    print(f"Додано {added} записів")
+    print(f"Записано {written} записів")
+    print(
+        "Оновлено або створено значення informsystem у "
+        f"{informsystem_updates} записах"
+    )
 
 
 if __name__ == "__main__":
