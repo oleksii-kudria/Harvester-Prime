@@ -62,6 +62,57 @@ def test_generate_report1_includes_pending(tmp_path, monkeypatch):
     assert pending["lastConnectEpoch"] == "1706933100"
 
 
+def test_generate_report1_special_note_for_remote_types(tmp_path, monkeypatch):
+    base_dir = tmp_path
+
+    (base_dir / "configs").mkdir()
+    (base_dir / "data" / "interim").mkdir(parents=True)
+    (base_dir / "configs" / "base.yaml").write_text(
+        """devices:
+  router: "Маршрутизатор"
+  rmkp: "РМКП"
+  rarm: "РАРМ"
+""",
+        encoding="utf-8",
+    )
+
+    (base_dir / "data" / "interim" / "verified.csv").write_text(
+        "source,type,name,ip,mac,randmac,note,personal\n"
+        "VSrc,rmkp,RName,1.1.1.1,AA:BB:CC:DD:EE:FF,,,\n",
+        encoding="utf-8",
+    )
+
+    (base_dir / "data" / "interim" / "pending.csv").write_text(
+        "source,name,ip,mac,randmac,type,firstDate,lastDate\n"
+        "PSrc,PName,2.2.2.2,11:22:33:44:55:66,,rarm,2024-01-02 03:04,2024-02-03 04:05\n",
+        encoding="utf-8",
+    )
+
+    gr = importlib.import_module("scripts.generate_report1")
+    monkeypatch.setattr(gr, "BASE_DIR", base_dir)
+    gr.main()
+
+    report_path = base_dir / "data" / "result" / "report1.csv"
+    with open(report_path, encoding="utf-8") as fh:
+        rows = list(csv.DictReader(fh))
+
+    assert len(rows) == 2
+
+    rmkp_row = next(row for row in rows if row["type"] == "rmkp")
+    rarm_row = next(row for row in rows if row["type"] == "rarm")
+
+    expected_note = (
+        "Не додавати до додатку 1.\n"
+        "Надано на перевірку.\n"
+        "На пристрої ввімкнено генерацію випадкової MAC-адреси"
+    )
+
+    assert rmkp_row["note"] == expected_note
+    assert rarm_row["note"].startswith(expected_note)
+    assert "Перше підключення – 02.01.2024 03:04" in rarm_row["note"]
+    assert "останнє підключення – 03.02.2024 04:05." in rarm_row["note"]
+
+
 def test_generate_report1_handles_epoch_times(tmp_path, monkeypatch):
     base_dir = tmp_path
 
