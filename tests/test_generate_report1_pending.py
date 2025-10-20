@@ -45,6 +45,7 @@ def test_generate_report1_includes_pending(tmp_path, monkeypatch):
     verified = rows[0]
     pending = rows[1]
     assert pending["verified"] == "false"
+    assert pending["ownership"] == "none"
     assert pending["type"] == "arm"
     assert pending["name"] == "АРМ\nPName"
     assert pending["ipmac"] == "2.2.2.2\nbb"
@@ -60,6 +61,7 @@ def test_generate_report1_includes_pending(tmp_path, monkeypatch):
     assert pending["lastConnect"] == "03.02.2024 04:05"
     assert pending["firstConnectEpoch"] == "1704164640"
     assert pending["lastConnectEpoch"] == "1706933100"
+    assert verified["ownership"] == "службовий"
 
 
 def test_generate_report1_special_note_for_remote_types(tmp_path, monkeypatch):
@@ -111,6 +113,8 @@ def test_generate_report1_special_note_for_remote_types(tmp_path, monkeypatch):
     assert rarm_row["note"].startswith(expected_note)
     assert "Перше підключення – 02.01.2024 03:04" in rarm_row["note"]
     assert "останнє підключення – 03.02.2024 04:05." in rarm_row["note"]
+    assert rmkp_row["ownership"] == ""
+    assert rarm_row["ownership"] == "none"
 
 
 def test_generate_report1_handles_epoch_times(tmp_path, monkeypatch):
@@ -158,6 +162,7 @@ def test_generate_report1_handles_epoch_times(tmp_path, monkeypatch):
     assert pending["lastConnect"] == "03.02.2024 04:05"
     assert pending["firstConnectEpoch"] == "1704164640"
     assert pending["lastConnectEpoch"] == "1706933100"
+    assert pending["ownership"] == "none"
 
 
 def test_generate_report1_handles_last_date_only(tmp_path, monkeypatch):

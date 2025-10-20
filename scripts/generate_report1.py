@@ -92,11 +92,14 @@ def build_verified_rows(
             first_fmt, first_epoch = _parse_timestamp(row.get("firstDate", ""))
             last_fmt, last_epoch = _parse_timestamp(row.get("lastDate", ""))
 
-            personal_val = row.get("personal", "").lower()
+            personal_val = row.get("personal", "").strip().lower()
+            ownership = ""
             if personal_val == "true":
                 suffix = "Пристрій особистий."
+                ownership = "особистий"
             elif personal_val == "false":
                 suffix = "Пристрій службовий."
+                ownership = "службовий"
             else:
                 suffix = ""
 
@@ -122,6 +125,7 @@ def build_verified_rows(
                     "lastConnect": last_fmt,
                     "firstConnectEpoch": first_epoch,
                     "lastConnectEpoch": last_epoch,
+                    "ownership": ownership,
                 }
             )
     return report_rows
@@ -222,6 +226,7 @@ def build_pending_rows(
                     "lastConnect": last_fmt if last else "",
                     "firstConnectEpoch": first_epoch if first else "",
                     "lastConnectEpoch": last_epoch if last else "",
+                    "ownership": "none",
                 }
             )
     return report_rows
@@ -237,6 +242,7 @@ def write_report(rows: list[dict[str, str]], path: Path) -> int:
     fieldnames = [
         "source",
         "verified",
+        "ownership",
         "type",
         "name",
         "ipmac",
