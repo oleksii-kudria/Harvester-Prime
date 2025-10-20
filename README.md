@@ -32,8 +32,10 @@ python scripts/process.py
 The script reads configuration, processes the raw logs and stores the normalized output.
 
 By default the command clears existing CSVs in `data/interim` (the same effect as
-running `python scripts/process.py clean`) and, after processing, automatically
-invokes `scripts/generate_report1.py` to rebuild `data/result/report1.csv`.
+running `python scripts/process.py clean`), removes generated files in
+`data/result` except the `*.example.csv` templates and, after processing,
+automatically invokes `scripts/generate_report1.py` to rebuild
+`data/result/report1.csv`.
 
 See `src/app/collectors/files.py` for implementation details.
 
@@ -85,27 +87,29 @@ contain the listed columns. Columns are read as text unless noted otherwise.
 1. **Clean interim data** – remove CSVs in `data/interim` (except
    `*.example.csv`) to ensure a fresh run. This happens automatically even
    without passing the `clean` argument.
-2. **Normalize DHCP logs** – read `data/raw/dhcp` and write unique records
+2. **Reset result reports** – delete files from `data/result` while keeping
+   only the `*.example.csv` templates.
+3. **Normalize DHCP logs** – read `data/raw/dhcp` and write unique records
    to `data/interim/dhcp.csv`.
-3. **Append Ubiq data** – convert Ubiq CSVs and add them to the interim DHCP
+4. **Append Ubiq data** – convert Ubiq CSVs and add them to the interim DHCP
    file.
-4. **Validation check** – compare MACs from `data/raw/validation` with the
+5. **Validation check** – compare MACs from `data/raw/validation` with the
    DHCP list and write a report to the configured validation path
    (default: `data/result/report1.csv`).
-5. **ARM interim** – match ARM inventory MACs with DHCP data and append
+6. **ARM interim** – match ARM inventory MACs with DHCP data and append
    matches to `data/interim/verified.csv` with `type="arm"`.
-6. **MKP interim** – match MKP inventory MACs with DHCP data and append
+7. **MKP interim** – match MKP inventory MACs with DHCP data and append
    matches to the same verified file with `type="mkp"` and optional
    `randmac`.
-7. **Other devices** – append entries from `data/raw/other` to
+8. **Other devices** – append entries from `data/raw/other` to
    `data/interim/verified.csv` when their MAC is present in DHCP data.
-8. **ARM & MKP reports** – create `data/result/120report2.csv` comparing ARM
+9. **ARM & MKP reports** – create `data/result/120report2.csv` comparing ARM
    and MKP inventories against DHCP data; new rows include `name`, `ipmac`,
    `owner` and `note`.
-9. **Pending devices** – write DHCP records absent from the verified list to
+10. **Pending devices** – write DHCP records absent from the verified list to
    `data/interim/pending.csv` with a device `type` inferred from the host
    name.
-10. **Generate report1** – run `scripts/generate_report1.py` to combine
+11. **Generate report1** – run `scripts/generate_report1.py` to combine
     verified and pending records into `data/result/report1.csv`.
 
 ## Result files

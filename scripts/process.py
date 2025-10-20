@@ -921,12 +921,33 @@ def clean_interim(directory: Path | None = None) -> None:
             pass
 
 
+def clean_result(directory: Path | None = None) -> None:
+    """Delete generated result files except examples."""
+
+    directory = Path(directory or BASE_DIR / "data/result")
+    if not directory.exists():
+        return
+
+    for path in directory.iterdir():
+        if path.is_dir():
+            continue
+        if path.name.endswith(".example.csv"):
+            print(f"[INFO] Залишено: {path.name}")
+            continue
+        try:
+            path.unlink()
+            print(f"[INFO] Видалено: {path.name}")
+        except FileNotFoundError:  # pragma: no cover - already deleted
+            pass
+
+
 def main(argv: list[str] | None = None) -> None:
     argv = list(argv or sys.argv[1:])
     if argv and argv[0] == "clean":
         argv = argv[1:]
 
     clean_interim()
+    clean_result()
 
     config = load_config()
     paths = config.get("paths", {})
