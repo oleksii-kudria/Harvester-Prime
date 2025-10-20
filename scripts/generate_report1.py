@@ -8,6 +8,7 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 EXCLUDED_RANDOMIZED_TYPES = {"rarm", "rmkp"}
+SPECIAL_NOTE_TYPES = {"rmkp", "rarm"}
 
 
 def load_device_mapping() -> list[tuple[str, str]]:
@@ -64,19 +65,27 @@ def build_verified_rows(
                 name_parts.append(note_val)
             name = "\n".join(name_parts)
             ipmac = f"{row.get('ip', '')}\n{row.get('mac', '')}"
-            note_parts = ["Надано на перевірку."]
-            randmac_val = row.get("randmac", "")
-            if randmac_val:
-                note_parts.append(
-                    f"На пристрої ввімкнено генерацію випадкової MAC-адреси - {randmac_val}"
-                )
-            if (
-                row.get("mac", "").upper() in randomized_macs
-                and key not in EXCLUDED_RANDOMIZED_TYPES
-            ):
-                note_parts.insert(
-                    1, "На пристрої увімкнена генерація випадкової MAC-адреси."
-                )
+            if key in SPECIAL_NOTE_TYPES:
+                note_parts = [
+                    "Не додавати до додатку 1.",
+                    "Надано на перевірку.",
+                    "На пристрої ввімкнено генерацію випадкової MAC-адреси",
+                ]
+            else:
+                note_parts = ["Надано на перевірку."]
+                randmac_val = row.get("randmac", "")
+                if randmac_val:
+                    note_parts.append(
+                        "На пристрої ввімкнено генерацію випадкової MAC-адреси"
+                        f" - {randmac_val}"
+                    )
+                if (
+                    row.get("mac", "").upper() in randomized_macs
+                    and key not in EXCLUDED_RANDOMIZED_TYPES
+                ):
+                    note_parts.insert(
+                        1, "На пристрої увімкнена генерація випадкової MAC-адреси."
+                    )
 
             note = "\n".join(note_parts)
 
@@ -167,7 +176,15 @@ def build_pending_rows(
                 continue
             name = f"{display_name}\n{row.get('name', '')}"
             ipmac = f"{row.get('ip', '')}\n{row.get('mac', '')}"
-            note_parts = ["Не надано для перевірки."]
+            note_parts: list[str]
+            if key in SPECIAL_NOTE_TYPES:
+                note_parts = [
+                    "Не додавати до додатку 1.",
+                    "Надано на перевірку.",
+                    "На пристрої ввімкнено генерацію випадкової MAC-адреси",
+                ]
+            else:
+                note_parts = ["Не надано для перевірки."]
             first = row.get("firstDate", "")
             last = row.get("lastDate", "")
             first_fmt, first_epoch = _parse_timestamp(first)
@@ -186,6 +203,7 @@ def build_pending_rows(
             if (
                 row.get("mac", "").upper() in randomized_macs
                 and key not in EXCLUDED_RANDOMIZED_TYPES
+                and key not in SPECIAL_NOTE_TYPES
             ):
                 note_parts.insert(
                     1, "На пристрої увімкнена генерація випадкової MAC-адреси."
