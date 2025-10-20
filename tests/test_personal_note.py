@@ -39,3 +39,5 @@ def test_personal_suffix_in_note(tmp_path, monkeypatch):
         rows[1]["note"]
         == "Надано на перевірку. Пристрій службовий. Заявка на підключення до локальних мереж, складена, МАС-адреса закріплена за ІР-адресою."
     )
+    assert rows[0]["ownership"] == "особистий"
+    assert rows[1]["ownership"] == "службовий"
