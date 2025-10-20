@@ -80,6 +80,9 @@ def build_verified_rows(
 
             note = "\n".join(note_parts)
 
+            first_fmt, first_epoch = _parse_timestamp(row.get("firstDate", ""))
+            last_fmt, last_epoch = _parse_timestamp(row.get("lastDate", ""))
+
             personal_val = row.get("personal", "").lower()
             if personal_val == "true":
                 suffix = "Пристрій особистий."
@@ -106,30 +109,49 @@ def build_verified_rows(
                     "name": name,
                     "ipmac": ipmac,
                     "note": note,
+                    "firstConnect": first_fmt,
+                    "lastConnect": last_fmt,
+                    "firstConnectEpoch": first_epoch,
+                    "lastConnectEpoch": last_epoch,
                 }
             )
     return report_rows
 
 
-def _format_dt(value: str) -> str:
-    """Return ``value`` formatted as ``dd.MM.yyyy HH:mm`` if possible."""
+def _parse_timestamp(value: str) -> tuple[str, str]:
+    """Return formatted (``dd.MM.yyyy HH:mm``) and epoch strings for *value*.
+
+    When parsing fails the original, stripped value is returned for both
+    formatted and epoch representations to preserve the input data.
+    """
+
     if not value:
-        return ""
-    value = value.strip()
-    if value.isdigit():
+        return "", ""
+
+    stripped = value.strip()
+    dt: datetime | None = None
+    epoch_value: str = stripped
+
+    if stripped.isdigit():
         try:
-            ts = int(value)
+            ts = int(stripped)
             if ts > 1_000_000_000_000:  # milliseconds
                 ts /= 1000
             dt = datetime.fromtimestamp(ts)
         except (ValueError, OSError):
-            return value
+            return stripped, stripped
     else:
         try:
-            dt = datetime.fromisoformat(value)
+            dt = datetime.fromisoformat(stripped)
         except ValueError:
-            return value
-    return dt.strftime("%d.%m.%Y %H:%M")
+            return stripped, stripped
+
+    if dt is None:
+        return stripped, stripped
+
+    epoch_value = str(int(dt.timestamp()))
+    formatted_value = dt.strftime("%d.%m.%Y %H:%M")
+    return formatted_value, epoch_value
 
 
 def build_pending_rows(
@@ -148,9 +170,9 @@ def build_pending_rows(
             note_parts = ["Не надано для перевірки."]
             first = row.get("firstDate", "")
             last = row.get("lastDate", "")
+            first_fmt, first_epoch = _parse_timestamp(first)
+            last_fmt, last_epoch = _parse_timestamp(last)
             if first and last:
-                first_fmt = _format_dt(first)
-                last_fmt = _format_dt(last)
                 if first == last:
                     note_parts.append(
                         f"Перше та останнє підключення – {last_fmt}."
@@ -160,7 +182,6 @@ def build_pending_rows(
                         f"Перше підключення – {first_fmt}, останнє підключення – {last_fmt}."
                     )
             elif not first and last:
-                last_fmt = _format_dt(last)
                 note_parts.append(f"Останнє підключення – {last_fmt}.")
             if (
                 row.get("mac", "").upper() in randomized_macs
@@ -179,6 +200,10 @@ def build_pending_rows(
                     "name": name,
                     "ipmac": ipmac,
                     "note": note,
+                    "firstConnect": first_fmt if first else "",
+                    "lastConnect": last_fmt if last else "",
+                    "firstConnectEpoch": first_epoch if first else "",
+                    "lastConnectEpoch": last_epoch if last else "",
                 }
             )
     return report_rows
@@ -191,23 +216,43 @@ def write_report(rows: list[dict[str, str]], path: Path) -> int:
     target file are skipped.
     """
 
-    fieldnames = ["source", "verified", "type", "name", "ipmac", "note"]
+    fieldnames = [
+        "source",
+        "verified",
+        "type",
+        "name",
+        "ipmac",
+        "note",
+        "firstConnect",
+        "lastConnect",
+        "firstConnectEpoch",
+        "lastConnectEpoch",
+    ]
     path.parent.mkdir(parents=True, exist_ok=True)
 
     existing: set[tuple[str, ...]] = set()
+    existing_rows: list[dict[str, str]] = []
     file_exists = path.exists()
+    rewrite_required = False
     if file_exists:
         with open(path, newline="", encoding="utf-8") as fh:
             reader = csv.DictReader(fh)
-            for row in reader:
+            existing_rows = list(reader)
+            header_fields = reader.fieldnames or []
+            rewrite_required = any(field not in header_fields for field in fieldnames)
+            for row in existing_rows:
                 existing.add(tuple(row.get(field, "") for field in fieldnames))
 
-    mode = "a" if file_exists else "w"
+    mode = "a" if file_exists and not rewrite_required else "w"
     added = 0
     with open(path, mode, newline="", encoding="utf-8") as fh:
         writer = csv.DictWriter(fh, fieldnames=fieldnames)
-        if not file_exists:
+        if not file_exists or rewrite_required:
             writer.writeheader()
+            if rewrite_required:
+                for row in existing_rows:
+                    normalized = {field: row.get(field, "") for field in fieldnames}
+                    writer.writerow(normalized)
         for row in rows:
             key = tuple(row.get(field, "") for field in fieldnames)
             if key in existing:
