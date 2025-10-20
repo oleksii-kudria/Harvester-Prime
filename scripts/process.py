@@ -22,9 +22,13 @@ try:
 except Exception:  # pragma: no cover
     yaml = None  # type: ignore
 
-# Ensure the src directory is on the Python path
+# Ensure the repository root and ``src`` directory are on the Python path
 BASE_DIR = Path(__file__).resolve().parent.parent
-sys.path.append(str(BASE_DIR / "src"))
+
+for path in (BASE_DIR, BASE_DIR / "src"):
+    path_str = str(path)
+    if path_str not in sys.path:
+        sys.path.append(path_str)
 
 from app.collectors.files import (
     load_dhcp_logs,
