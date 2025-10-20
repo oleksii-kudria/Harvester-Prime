@@ -41,3 +41,5 @@ def test_personal_suffix_in_note(tmp_path, monkeypatch):
     )
     assert rows[0]["ownership"] == "особистий"
     assert rows[1]["ownership"] == "службовий"
+    assert rows[0]["informsystem"] == "none"
+    assert rows[1]["informsystem"] == "none"

@@ -62,6 +62,8 @@ def test_generate_report1_includes_pending(tmp_path, monkeypatch):
     assert pending["firstConnectEpoch"] == "1704164640"
     assert pending["lastConnectEpoch"] == "1706933100"
     assert verified["ownership"] == "службовий"
+    assert verified["informsystem"] == "none"
+    assert pending["informsystem"] == "none"
 
 
 def test_generate_report1_special_note_for_remote_types(tmp_path, monkeypatch):
@@ -115,6 +117,8 @@ def test_generate_report1_special_note_for_remote_types(tmp_path, monkeypatch):
     assert "останнє підключення – 03.02.2024 04:05." in rarm_row["note"]
     assert rmkp_row["ownership"] == ""
     assert rarm_row["ownership"] == "none"
+    assert rmkp_row["informsystem"] == "none"
+    assert rarm_row["informsystem"] == "none"
 
 
 def test_generate_report1_handles_epoch_times(tmp_path, monkeypatch):
@@ -163,6 +167,60 @@ def test_generate_report1_handles_epoch_times(tmp_path, monkeypatch):
     assert pending["firstConnectEpoch"] == "1704164640"
     assert pending["lastConnectEpoch"] == "1706933100"
     assert pending["ownership"] == "none"
+    assert rows[0]["informsystem"] == "none"
+    assert pending["informsystem"] == "none"
+
+
+def test_generate_report1_assigns_informsystem(tmp_path, monkeypatch):
+    base_dir = tmp_path
+
+    (base_dir / "configs").mkdir()
+    (base_dir / "data" / "interim").mkdir(parents=True)
+    (base_dir / "configs" / "base.yaml").write_text(
+        """devices:
+  router: "Маршрутизатор"
+""",
+        encoding="utf-8",
+    )
+
+    (base_dir / "configs" / "local.yml").write_text(
+        """apps:
+  app1:
+    source: "офіс"
+    target: "Microsoft Office"
+  app2:
+    source: "хром"
+    target: "Google Chrome"
+""",
+        encoding="utf-8",
+    )
+
+    with open(base_dir / "data" / "interim" / "verified.csv", "w", encoding="utf-8", newline="") as fh:
+        writer = csv.writer(fh)
+        writer.writerow(["source", "type", "name", "ip", "mac", "randmac", "note", "personal"])
+        writer.writerow([
+            "VS1",
+            "router",
+            "RouterName",
+            "1.1.1.1",
+            "aa",
+            "",
+            "офіс\nхром",
+            "",
+        ])
+
+    gr = importlib.import_module("scripts.generate_report1")
+    monkeypatch.setattr(gr, "BASE_DIR", base_dir)
+    gr.main()
+
+    report_path = base_dir / "data" / "result" / "report1.csv"
+    with open(report_path, encoding="utf-8") as fh:
+        rows = list(csv.DictReader(fh))
+
+    assert len(rows) == 1
+    row = rows[0]
+    assert row["name"] == "Маршрутизатор\nRouterName"
+    assert row["informsystem"] == "Microsoft Office\nGoogle Chrome"
 
 
 def test_generate_report1_handles_last_date_only(tmp_path, monkeypatch):
